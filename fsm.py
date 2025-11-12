@@ -6,7 +6,7 @@ import os
 from datetime import datetime
 from data_visualizer import DataVisualizer
 from collections import deque
-from personal_data_recorder import PersonalDataRecorder
+from data_recorder import DataRecorder
 from ble import BLE
 
 class FSM():
@@ -22,6 +22,7 @@ class FSM():
         self.enable_visualization = enable_visualization
         self.viz_port = viz_port
         self.state = None
+        self.recorder = DataRecorder(self)
         
         self.data = {
             'HF' : deque(maxlen=240),
@@ -63,6 +64,9 @@ class FSM():
         }
         self.running = True
         self.visualizer = None
+        
+        self.arousal_score = None
+        self.valence_score = None
         
         # 根据数据源初始化相应的设备
         if data_source in ['radar', 'both']:
@@ -126,6 +130,11 @@ class FSM():
             if viz_data:
                 self.visualizer.update_data(viz_data)
 
+    def emotion_monitor(self,):
+        time.sleep(60)
+        while 1:
+            self.arousal_score, self.valence_score = self.recorder.record()
+
     def run(self):
         """启动FSM主循环 - 支持多数据源"""
         print(f"[INFO] 启动FSM... 数据源: {self.data_source}")
@@ -142,6 +151,12 @@ class FSM():
         # 启动状态监控线程
         t_state = threading.Thread(target=self.state_monitor, daemon=True)
         t_state.start()
+
+        emotion_recorder = threading.Thread(
+            target=self.emotion_monitor,
+            daemon=True,
+        )
+        emotion_recorder.start()
         
         print("[INFO] 所有线程已启动，FSM运行中...")
 
@@ -177,8 +192,8 @@ class FSM():
 
 if __name__ == "__main__":
     # 支持命令行参数选择数据源和可视化选项
-    data_source = 'both'  # 修改为ppg以测试串口连接
-    enable_visualization = False  # 设置为True启用可视化
+    data_source = 'radar'  # 修改为ppg以测试串口连接
+    enable_visualization = True  # 设置为True启用可视化
     viz_port = 5000  # 可视化服务端口
     ble_instance = BLE(device_name="around_5", max_buffer_size=120)
 
@@ -189,18 +204,9 @@ if __name__ == "__main__":
         viz_port=viz_port,
         ble_instance = ble_instance
     )
-    recorder = PersonalDataRecorder(fsm_instance)
-    
+    fsm_instance.run()
+    recorder = DataRecorder(fsm_instance)
+    time.sleep(60)  # 等待FSM完全启动
     while True:
-        recorder = PersonalDataRecorder(fsm_instance)
-        recorder.record(
-            save_path='personal_data.csv',
-            duration=60,
-            none_style='empty'
-        )
-
-    time.sleep(600) 
-
-    # 确保程序退出时清理资源
-    fsm_instance.stop()
+        recorder.record()
 

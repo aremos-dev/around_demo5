@@ -483,7 +483,7 @@ class BLE():
 
 if __name__ == "__main__":
      # 在初始化时重置蓝牙
-    ble = BLE(device_name="around_demo5", max_buffer_size=120)
+    ble = BLE(device_name="LSM_demo5", max_buffer_size=120)
     # 直接开始连续读取，connect 会在后台线程中自动执行
     ble.start_continuous_reading()
     time.sleep(5)

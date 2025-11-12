@@ -9,13 +9,13 @@ import sys
 from hall import hall
 import statistics
 import os
-from personal_data_recorder import PersonalDataRecorder
+from data_recorder import DataRecorder
 
 class dot():
     def __init__(self, data_source='both'):
-        self.ble = BLE(device_name="around_demo5")
+        self.ble = BLE(device_name="LSM_demo5")
         self.fsm = FSM(data_source=data_source, enable_visualization=True, viz_port=5000, ble_instance=self.ble)
-        self.recorder = PersonalDataRecorder(self.fsm)
+        self.recorder = DataRecorder(self.fsm)
         self.is_here = False
         self.le = True
         self.is_levitating = False
@@ -45,27 +45,12 @@ class dot():
         # self.fsm.radar.start_continuous_reading()
         # self.fsm.ppg_device.start_continuous_reading()
         self.fsm.run()
-        recorder = threading.Thread(
-            target=self.emotion_monitor,
-            daemon=True,
-        )
-        recorder.start()
         levitating = threading.Thread(target=self.levitation, daemon=True)
         levitating.start()
         is_here_monitor = threading.Thread(target=self.monitor_here, daemon=True)
         is_here_monitor.start()
         print("started reading data")
-    
-    def emotion_monitor(self,):
-        recorder = PersonalDataRecorder(self.fsm)
-        time.sleep(60)
-        while 1:
-            recorder.record(
-                save_path='personal_data.csv',
-                duration=5,
-                none_style='empty'
-            )
-            
+           
     def monitor_here(self,):
         print('start monitor here')
         while 1:

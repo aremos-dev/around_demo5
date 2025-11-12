@@ -1,0 +1,733 @@
+/* 开屏页样式 */
+.splash-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #ffffff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    opacity: 1;
+    transition: opacity 0.5s ease-out;
+}
+
+.splash-screen.fade-out {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.splash-logo {
+    width: 150px;
+    height: auto;
+    animation: logoFadeIn 0.3s ease-in;
+}
+
+@keyframes logoFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* 基本重置和全局样式 */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background-color: #f0f2f5;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+h1, h2, h3, p, span {
+    margin: 0;
+    color: #333;
+}
+
+/* 主容器 */
+.main-content {
+    width: 375px; /* 模拟手机屏幕宽度 */
+    height: 812px; /* 模拟手机屏幕高度 */
+    background-color: #ffffff;
+    border-radius: 20px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    padding: 24px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+}
+
+/* 头部 */
+.app-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.header-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.app-header h1 {
+    font-size: 20px;
+    font-weight: 600;
+    flex: 1; /* 让标题占据中间剩余空间 */
+    text-align: center; /* 文字居中 */
+    transform: translateX(15px); /* 向右微调 */
+    transition: transform 0.2s ease; /* 平滑过渡，便于进一步微调 */
+}
+
+.heart-btn, .health-btn, .lang-btn {
+    border: none;
+    background: none;
+    cursor: pointer;
+    padding: 5px;
+    color: #c0c0c0;
+    transition: color 0.3s;
+}
+
+.heart-btn:hover {
+    color: #ff6b6b;
+}
+
+.health-btn:hover {
+    color: #4facfe;
+}
+
+.lang-btn:hover {
+    color: #6c63ff;
+}
+
+/* 情绪视觉 */
+.mood-visual {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    text-align: center;
+    transition: background-color 0.5s ease;
+}
+
+.mood-aura {
+    width: 250px;
+    height: 250px;
+    background: radial-gradient(circle, rgba(140, 233, 173, 0.8), rgba(140, 233, 173, 0) 70%);
+    filter: blur(40px);
+    position: absolute;
+    transition: background 0.5s ease;
+}
+
+/* 不同情绪状态的背景颜色 */
+.mood-visual.mood-joy .mood-aura {
+    background: radial-gradient(circle, rgba(255, 215, 0, 0.8), rgba(255, 215, 0, 0) 70%);
+}
+
+.mood-visual.mood-tense .mood-aura {
+    background: radial-gradient(circle, rgba(255, 107, 107, 0.8), rgba(255, 107, 107, 0) 70%);
+}
+
+.mood-visual.mood-low .mood-aura {
+    background: radial-gradient(circle, rgba(135, 206, 235, 0.8), rgba(135, 206, 235, 0) 70%);
+}
+
+.mood-visual.mood-calm .mood-aura {
+    background: radial-gradient(circle, rgba(144, 238, 144, 0.8), rgba(144, 238, 144, 0) 70%);
+}
+
+.mood-visual.mood-neutral .mood-aura {
+    background: radial-gradient(circle, rgba(192, 192, 192, 0.8), rgba(192, 192, 192, 0) 70%);
+}
+
+.mood-text {
+    position: relative; /* 确保文字在光环上 */
+    z-index: 1;
+}
+
+.mood-text h2 {
+    font-size: 48px;
+    font-weight: 300;
+    color: #2c3e50;
+}
+
+.mood-text p {
+    font-size: 16px;
+    color: #7f8c8d;
+}
+
+.mood-prompt {
+    position: relative;
+    z-index: 1;
+    margin-top: 24px;
+    color: #7f8c8d;
+    font-size: 14px;
+}
+
+/* 情绪日历 */
+.mood-calendar {
+    margin-top: 20px;
+}
+
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.calendar-header h3 {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.calendar-toggle {
+    background: none;
+    border: none;
+    font-size: 18px;
+    color: #666;
+    cursor: pointer;
+    padding: 5px;
+    transition: transform 0.3s, color 0.3s;
+    margin-left: auto;
+}
+
+.calendar-toggle:hover {
+    color: #333;
+}
+
+.calendar-toggle.expanded {
+    transform: rotate(180deg);
+}
+
+.month-nav {
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: #666;
+    cursor: pointer;
+    padding: 5px 10px;
+    transition: color 0.3s;
+}
+
+.month-nav:hover {
+    color: #333;
+}
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+    text-align: center;
+    font-size: 12px;
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+.calendar-grid:not(.expanded) {
+    max-height: 50px; /* 折叠时只显示一行的高度 */
+}
+
+.calendar-grid:not(.expanded) .weekday {
+    display: none; /* 折叠时隐藏星期标题 */
+}
+
+.calendar-grid:not(.expanded) .day-cell {
+    display: none; /* 默认隐藏所有日期 */
+}
+
+.calendar-grid:not(.expanded) .day-cell.current-week {
+    display: flex; /* 只显示本周的日期 */
+    flex-direction: column;
+    align-items: center;
+}
+
+.calendar-grid:not(.expanded) .day-cell .weekday-label {
+    display: none; /* 折叠时不显示星期标签 */
+}
+
+.calendar-grid:not(.expanded) .day-cell .day-number {
+    font-size: 14px;
+}
+
+.calendar-grid.expanded .weekday-label {
+    display: none; /* 展开时隐藏星期标签 */
+}
+
+.calendar-grid.expanded .day-cell {
+    display: flex; /* 展开时显示所有日期 */
+}
+
+.calendar-grid.expanded {
+    max-height: 300px; /* 展开时显示完整日历 */
+}
+
+.calendar-grid .weekday {
+    color: #aaa;
+    font-weight: 600;
+    padding: 5px 0;
+}
+
+.calendar-grid .day-cell {
+    font-size: 14px;
+    color: #333;
+    padding: 8px 4px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.calendar-grid .day-cell:hover {
+    background-color: #f0f0f0;
+    transform: scale(1.05);
+}
+
+.calendar-grid .day-cell.selected {
+    background-color: #667eea;
+    color: white;
+    font-weight: 600;
+}
+
+.calendar-grid .day-cell.today {
+    border: 2px solid #667eea;
+}
+
+.calendar-grid .day-cell.other-month {
+    color: #ccc;
+}
+
+.calendar-grid .day-cell.empty {
+    cursor: default;
+}
+
+.calendar-grid .day-cell.empty:hover {
+    background-color: transparent;
+    transform: none;
+}
+
+.dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+}
+.dot.green { background-color: #8ce9ad; }
+.dot.yellow { background-color: #f9d423; }
+.dot.pink { background-color: #ffb6c1; }
+.dot.blue { background-color: #a0c4ff; }
+.dot.gray { background-color: #e0e0e0; }
+
+/* 每日时间线 */
+.daily-timeline {
+    margin-top: 24px;
+}
+
+.timeline-header {
+    margin-bottom: 10px;
+}
+
+.timeline-header h4 {
+    font-size: 14px;
+    font-weight: 600;
+    color: #666;
+    margin: 0;
+}
+
+.timeline-bar {
+    width: 100%;
+    height: 4px;
+    background-color: #f0f0f0;
+    border-radius: 2px;
+    position: relative;
+    margin-bottom: 8px;
+}
+
+.timeline-bar .dot {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 10px;
+    height: 10px;
+}
+
+.timeline-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #aaa;
+}
+
+/* 弹窗样式 */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.4);
+    /* 模糊背景 */
+    backdrop-filter: blur(5px);
+    display: none; /* 默认隐藏 */
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background-color: rgba(255, 255, 255, 0.95);
+    width: 90%;
+    max-width: 375px; /* 限制为与主页面相同的宽度 */
+    max-height: 80vh; /* 限制最大高度为视口高度的80% */
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    position: relative;
+    box-sizing: border-box;
+    overflow-y: auto; /* 如果内容过多，添加滚动条 */
+}
+
+.close-btn {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 28px;
+    color: #aaa;
+    border: none;
+    background: none;
+    cursor: pointer;
+}
+
+/* 弹窗内的图表 */
+.chart-section {
+    margin-bottom: 24px; /* 图表之间的间距 */
+}
+
+.chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px; /* 标题和图表之间的间距 */
+}
+
+.chart-header h3 {
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.current-value {
+    font-size: 16px;
+    color: #555;
+}
+
+.current-value span {
+    font-size: 24px;
+    font-weight: 600;
+    color: #333;
+    margin-right: 4px;
+}
+/* 弹窗图表样式 */
+.modal-chart-box {
+    width: 100%;
+    height: 150px; /* 缩小一半的图表高度 */
+    background: #fafafa;
+    border-radius: 10px;
+    padding: 10px;
+    box-sizing: border-box; /* 确保padding不会导致溢出 */
+}
+
+/* 健康指标四宫格弹窗 */
+.health-modal-content {
+    max-width: 375px;
+    padding: 20px;
+}
+
+.modal-title {
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    text-align: left;
+    color: #333;
+}
+
+.health-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+.health-card {
+    background: #f8f9fa;
+    border-radius: 16px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s;
+}
+
+.health-card:hover {
+    transform: translateY(-2px);
+}
+
+.health-card.stress-level {
+    background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+}
+
+.health-card.recovery {
+    background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+}
+
+.health-card.balance {
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+}
+
+.health-card.activity {
+    background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%);
+}
+
+.health-icon {
+    font-size: 32px;
+    margin-bottom: 8px;
+}
+
+.health-card h3 {
+    font-size: 12px;
+    font-weight: 600;
+    color: #555;
+    margin-bottom: 12px;
+    line-height: 1.3;
+}
+
+.health-wave {
+    width: 100%;
+    height: 40px;
+    margin: 8px 0;
+    color: rgba(0, 0, 0, 0.3);
+}
+
+.health-wave svg {
+    width: 100%;
+    height: 100%;
+}
+
+.health-line-icon {
+    width: 60px;
+    height: 30px;
+    margin: 8px 0;
+    color: rgba(0, 0, 0, 0.25);
+}
+
+.health-line-icon svg {
+    width: 100%;
+    height: 100%;
+}
+
+.health-chart {
+    width: 60px;
+    height: 60px;
+    margin: 8px 0;
+}
+
+.health-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: #333;
+    margin: 4px 0;
+}
+
+.health-unit {
+    font-size: 11px;
+    color: #888;
+    margin: 0;
+}
+
+/* 情绪图谱按钮 */
+.emotion-map-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s;
+    opacity: 0.7;
+}
+
+.emotion-map-btn:hover {
+    transform: scale(1.1);
+    opacity: 1;
+}
+
+/* 情绪图谱弹窗 */
+.emotion-map-modal-content {
+    width: 90%;
+    max-width: 600px;
+    max-height: 85vh;
+    padding: 24px;
+    overflow-y: auto;
+}
+
+.emotion-map-container {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1;
+    max-width: 400px;
+    margin: 20px auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#emotion-map-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.emotion-map-center {
+    position: relative;
+    z-index: 10;
+    text-align: center;
+    color: white;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.emotion-map-center h3 {
+    font-size: 36px;
+    font-weight: 300;
+    margin: 0 0 8px 0;
+    color: white;
+}
+
+.emotion-map-center p {
+    font-size: 14px;
+    margin: 0;
+    opacity: 0.9;
+    color: white;
+}
+
+/* 情绪日历周视图 */
+.emotion-calendar-week {
+    display: flex;
+    justify-content: space-around;
+    margin: 20px 0;
+    padding: 12px;
+    background: #f5f5f5;
+    border-radius: 12px;
+}
+
+.weekday-small {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    color: #999;
+    padding: 8px;
+    border-radius: 8px;
+    min-width: 36px;
+    text-align: center;
+    line-height: 1.4;
+    transition: all 0.3s;
+}
+
+.weekday-small.active {
+    background: #4a90e2;
+    color: white;
+    font-weight: 600;
+}
+
+/* 情绪时间线 */
+.emotion-timeline {
+    margin-top: 20px;
+    position: relative;
+}
+
+.timeline-dots {
+    position: relative;
+    height: 40px;
+    background: linear-gradient(to right, #f0f0f0 0%, #f0f0f0 100%);
+    border-radius: 20px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    padding: 0 4px;
+}
+
+.timeline-dot {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    transition: transform 0.2s;
+}
+
+.timeline-dot:hover {
+    transform: scale(1.3);
+}
+
+.timeline-dot.joy {
+    background-color: #FFD700;
+}
+
+.timeline-dot.tense {
+    background-color: #FF6B6B;
+}
+
+.timeline-dot.low {
+    background-color: #87CEEB;
+}
+
+.timeline-dot.calm {
+    background-color: #90EE90;
+}
+
+.timeline-dot.neutral {
+    background-color: #C0C0C0;
+}
+
+.timeline-labels-small {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: #999;
+    padding: 0 4px;
+}
+
+.timeline-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
