@@ -13,7 +13,7 @@ from data_recorder import DataRecorder
 
 class dot():
     def __init__(self, data_source='both'):
-        self.ble = BLE(device_name="LSM_demo5")
+        self.ble = BLE(device_name="demo6_1")
         self.fsm = FSM(data_source=data_source, enable_visualization=True, viz_port=5000, ble_instance=self.ble)
         self.recorder = DataRecorder(self.fsm)
         self.is_here = False
@@ -37,8 +37,6 @@ class dot():
             if self.ble.is_connected:
                 print("BLE device connected successfully.")
                 time.sleep(1)
-                
-
                 print("light set to blue")
         
     def run(self,):
@@ -110,10 +108,14 @@ class dot():
     def Stress_relief(self):
         print('start stress relief')
         num = self.fsm.data['br'][-1]
+        self.ble.spike_shake_sync(1)
+        time.sleep(0.5)
         while not self.is_levitating and num > 5 and not self.is_levitating:
             self.ble.freq_light_sync(num + 5)
             time.sleep(60 / (num + 5))
             num -= 1
+        time.sleep(0.5)
+        self.ble.spike_shake_sync(-1)
         time.sleep(0.5)
 
     def fatigue_breath_guide(self):
@@ -123,6 +125,7 @@ class dot():
         self.ble.mode_sync(1)
         time.sleep(1)
         self.ble.spike_shake_sync(1)
+        # self.ble.freq_light_sync(5)
         if self.music('breath.WAV'):
             print("breath guide finished")
         self.ble.mode_sync(3)
@@ -169,25 +172,25 @@ class dot():
                 while self.is_here:
                     self.ble.color_sync(0,0,255)
                     if not self.is_levitating:
-                        time.sleep(10)
-                        if self.fsm.ppg_device.heartrate == 0:
-                            self.ble.mode_sync(2)
-                            print('usr is not touch the ppg')
-                            while not self.is_levitating:
-                                if self.ble.gyroscope[-1] == 2:
-                                    self.mindset_wander()
-                                    self.stop_interaction()
-                                    break
-                                elif self.ble.gyroscope[-1] == 1:
-                                    self.Stress_relief()
-                                    self.stop_interaction()
-                                    break
-                                elif self.ble.gyroscope[-1] == 0:
-                                    time.sleep(1)
-                        else :
-                            print('usr take the dot')
-                            self.fatigue_breath_guide()
-                            break
+                        # time.sleep(10)
+                        # if self.fsm.ppg_device.heartrate == 0:
+                        #     self.ble.mode_sync(2)
+                        #     print('usr is not touch the ppg')
+                        #     while not self.is_levitating:
+                        #         if self.ble.gyroscope[-1] == 2:
+                        #             self.mindset_wander()
+                        #             self.stop_interaction()
+                        #             break
+                        #         elif self.ble.gyroscope[-1] == 1:
+                        #             self.Stress_relief()
+                        #             self.stop_interaction()
+                        #             break
+                        #         elif self.ble.gyroscope[-1] == 0:
+                        #             time.sleep(1)
+                        # else :
+                        print('usr take the dot')#只保留疲劳模式
+                        self.fatigue_breath_guide()
+                        break
                     # elif (self.fsm.stress_assessment['details']['sdnn']['deviation'] > 10 or \
                     #             self.fsm.stress_assessment['details']['sdnn']['deviation'] < -10 or \
                     #             self.fsm.stress_assessment['details']['lf_hf_ratio']['deviation'] > 10 or \

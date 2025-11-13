@@ -342,7 +342,7 @@ class BLE():
         
     async def jump(self,a):
         if self.client and self.client.is_connected:
-            command = f'l={a}\n'.encode('ascii')
+            command = f'l={a}\n'.encode('ascii')#l = 0, 1, 2
             await self.client.write_gatt_char(self.write_characteristic_uuid, command)
             print(f"已发送跳跃指令: {a}")
     
@@ -483,7 +483,7 @@ class BLE():
 
 if __name__ == "__main__":
      # 在初始化时重置蓝牙
-    ble = BLE(device_name="LSM_demo5", max_buffer_size=120)
+    ble = BLE(device_name="demo6_1", max_buffer_size=120)
     # 直接开始连续读取，connect 会在后台线程中自动执行
     ble.start_continuous_reading()
     time.sleep(5)

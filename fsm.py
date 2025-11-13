@@ -195,7 +195,7 @@ if __name__ == "__main__":
     data_source = 'radar'  # 修改为ppg以测试串口连接
     enable_visualization = True  # 设置为True启用可视化
     viz_port = 5000  # 可视化服务端口
-    ble_instance = BLE(device_name="around_5", max_buffer_size=120)
+    ble_instance = BLE(device_name="demo6_1", max_buffer_size=120)
 
     
     fsm_instance = FSM(
