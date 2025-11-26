@@ -220,6 +220,14 @@ class BLE():
                 b"p=0\n"
             )
             print("已发送 p=0 指令以停止数据采集。")
+
+    def stop_reading_sync(self,):
+        """同步版本的stop_reading方法"""
+        if self.loop and self.loop.is_running():
+            future = asyncio.run_coroutine_threadsafe(self.stop_reading(), self.loop)
+            future.result(timeout=5.0)
+        else:
+            asyncio.run(self.color())
     
     async def disconnect(self):
         """断开设备连接"""
@@ -483,7 +491,7 @@ class BLE():
 
 if __name__ == "__main__":
      # 在初始化时重置蓝牙
-    ble = BLE(device_name="demo6_1", max_buffer_size=120)
+    ble = BLE(device_name="demo6_2", max_buffer_size=120)
     # 直接开始连续读取，connect 会在后台线程中自动执行
     ble.start_continuous_reading()
     time.sleep(5)
@@ -493,6 +501,7 @@ if __name__ == "__main__":
     time.sleep(0.5)
     ble.mode_sync(3)
     time.sleep(1)
+    ble.stop_reading_sync()
     # ble.color_sync(0,0,255)
     
     
