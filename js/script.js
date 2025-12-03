@@ -13,7 +13,7 @@
             respirationRate: '呼吸率',
             myHealth: '我的健康',
             stressLevel: '压力水平',
-            recovery: '压力调节恢复能力',
+            recovery: '恢复能力',
             balance: '自主神经平衡',
             activity: '自主神经活性',
             emotions: {
@@ -90,15 +90,9 @@
             chartTitles[1].textContent = t.respirationRate;
         }
 
-        // 更新健康卡片标题
-        const healthCards = document.querySelectorAll('.health-card');
-        if (healthCards.length >= 4) {
-            healthCards[0].querySelector('h3').textContent = t.stressLevel;
-            healthCards[1].querySelector('h3').textContent = t.recovery;
-            healthCards[2].querySelector('h3').textContent = t.balance;
-            healthCards[3].querySelector('h3').textContent = t.activity;
-        }
-
+        // 更新健康卡片标题 (如果有需要)
+        // 注意：新版设计中直接在HTML里写了，如果需要完全国际化，这里需要增加对应的id
+        
         // 如果 updateCalendar 已定义，则更新日历
         if (typeof updateCalendar === 'function') {
             updateCalendar();
@@ -121,17 +115,12 @@
     // ============ 日历功能 ============
     let currentDate = new Date();
     let selectedDate = null;
-
-    // 模拟的心情数据（后续可以从API获取）
-    const moodData = {
-        // 格式: 'YYYY-MM-DD': { moods: [{time: hour, mood: 'green/yellow/pink/blue'}] }
-    };
+    const moodData = {};
 
     function updateCalendar() {
         const year = currentDate.getFullYear();
         const month = currentDate.getMonth();
         
-        // 更新月份显示（使用当前语言）
         const t = translations[currentLang];
         const monthName = t.monthNames[month];
         if (currentLang === 'zh') {
@@ -140,15 +129,11 @@
             document.getElementById('current-month').textContent = `${monthName} ${year}`;
         }
         
-        // 获取本月第一天是星期几
         const firstDay = new Date(year, month, 1).getDay();
-        // 获取本月有多少天
         const daysInMonth = new Date(year, month + 1, 0).getDate();
-        // 获取上个月有多少天
         const prevMonthDays = new Date(year, month, 0).getDate();
         
         const calendarGrid = document.getElementById('calendar-grid');
-        // 清空现有的日期（保留星期标题）
         const weekdays = calendarGrid.querySelectorAll('.weekday');
         calendarGrid.innerHTML = '';
         weekdays.forEach(day => calendarGrid.appendChild(day));
@@ -157,16 +142,14 @@
         const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
         const todayDate = today.getDate();
         
-        // 计算本周的日期范围
-        const todayDayOfWeek = today.getDay(); // 0=Sunday, 6=Saturday
+        const todayDayOfWeek = today.getDay();
         const weekStart = new Date(today);
         weekStart.setDate(today.getDate() - todayDayOfWeek);
-        weekStart.setHours(0, 0, 0, 0); // 设置为当天开始
+        weekStart.setHours(0, 0, 0, 0);
         const weekEnd = new Date(weekStart);
         weekEnd.setDate(weekStart.getDate() + 6);
-        weekEnd.setHours(23, 59, 59, 999); // 设置为当天结束
+        weekEnd.setHours(23, 59, 59, 999);
         
-        // 添加上个月的日期（填充空白）
         for (let i = firstDay - 1; i >= 0; i--) {
             const prevDay = prevMonthDays - i;
             const prevMonth = month - 1;
@@ -174,7 +157,6 @@
             const actualPrevMonth = month === 0 ? 11 : prevMonth;
             const dayCell = createDayCell(prevDay, 'other-month');
             
-            // 检查上个月的日期是否在本周范围内
             const cellDate = new Date(prevYear, actualPrevMonth, prevDay);
             cellDate.setHours(0, 0, 0, 0);
             if (cellDate >= weekStart && cellDate <= weekEnd) {
@@ -184,24 +166,20 @@
             calendarGrid.appendChild(dayCell);
         }
         
-        // 添加本月的日期
         for (let day = 1; day <= daysInMonth; day++) {
             const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
             const dayCell = createDayCell(day, '', dateStr);
             
-            // 检查是否在本周范围内
             const cellDate = new Date(year, month, day);
             cellDate.setHours(0, 0, 0, 0);
             if (cellDate >= weekStart && cellDate <= weekEnd) {
                 dayCell.classList.add('current-week');
             }
             
-            // 标记今天
             if (isCurrentMonth && day === todayDate) {
                 dayCell.classList.add('today');
             }
             
-            // 添加心情指示点（模拟数据）
             if (moodData[dateStr]) {
                 const dot = document.createElement('span');
                 const moodColors = ['green', 'yellow', 'pink', 'blue'];
@@ -213,16 +191,14 @@
             calendarGrid.appendChild(dayCell);
         }
         
-        // 添加下个月的日期（填充剩余空间）
-        const totalCells = calendarGrid.children.length - 7; // 减去星期标题
-        const remainingCells = 35 - totalCells; // 5周 * 7天 = 35个格子
+        const totalCells = calendarGrid.children.length - 7;
+        const remainingCells = 35 - totalCells;
         for (let day = 1; day <= remainingCells; day++) {
             const nextMonth = month + 1;
             const nextYear = month === 11 ? year + 1 : year;
             const actualNextMonth = month === 11 ? 0 : nextMonth;
             const dayCell = createDayCell(day, 'other-month');
             
-            // 检查下个月的日期是否在本周范围内
             const cellDate = new Date(nextYear, actualNextMonth, day);
             cellDate.setHours(0, 0, 0, 0);
             if (cellDate >= weekStart && cellDate <= weekEnd) {
@@ -237,18 +213,14 @@
         const cell = document.createElement('div');
         cell.className = `day-cell ${className}`;
         
-        // 如果有dateStr，添加星期信息（用于折叠视图）
         if (dateStr) {
             const date = new Date(dateStr);
-            const weekdayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
             const weekdayShort = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
             
-            // 创建日期容器
             const dayNumber = document.createElement('span');
             dayNumber.textContent = day;
             dayNumber.className = 'day-number';
             
-            // 创建星期容器（仅在折叠视图中显示）
             const weekdayLabel = document.createElement('span');
             weekdayLabel.textContent = weekdayShort[date.getDay()];
             weekdayLabel.className = 'weekday-label';
@@ -265,23 +237,19 @@
     }
 
     function selectDate(dateStr, cellElement) {
-        // 移除之前选中的样式
         document.querySelectorAll('.day-cell.selected').forEach(cell => {
             cell.classList.remove('selected');
         });
         
-        // 添加选中样式
         cellElement.classList.add('selected');
         selectedDate = dateStr;
         
-        // 更新日期显示
         const date = new Date(dateStr);
         const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
                            'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
         document.getElementById('selected-date-display').textContent = 
             `${monthNames[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
         
-        // 更新时间线
         updateTimeline(dateStr);
     }
 
@@ -289,14 +257,11 @@
         const timelineBar = document.getElementById('timeline-bar');
         timelineBar.innerHTML = '';
         
-        // 模拟当天的心情数据（后续从API获取）
-        // 格式: [{hour: 8, mood: 'green'}, {hour: 14, mood: 'yellow'}, {hour: 20, mood: 'pink'}]
         const dayMoods = generateMockMoodData();
         
         dayMoods.forEach(mood => {
             const dot = document.createElement('span');
             dot.className = `dot ${mood.mood}`;
-            // 将小时转换为百分比位置 (0-24小时 -> 0-100%)
             const position = (mood.hour / 24) * 100;
             dot.style.left = `${position}%`;
             timelineBar.appendChild(dot);
@@ -304,25 +269,19 @@
     }
 
     function generateMockMoodData() {
-        // 生成更密集的心情点，主要集中在工作时间段（8:00-18:00）
         const moodColors = ['green', 'yellow', 'pink', 'blue'];
         const moods = [];
-        
-        // 工作时间段（8:00-18:00）生成10-15个点
-        const workTimeCount = Math.floor(Math.random() * 6) + 10; // 10-15个
+        const workTimeCount = Math.floor(Math.random() * 6) + 10;
         for (let i = 0; i < workTimeCount; i++) {
-            // 在8-18小时之间生成随机时间（包含小数以增加密集度）
-            const hour = 8 + Math.random() * 16; // 8.0 - 18.0
+            const hour = 8 + Math.random() * 16;
             moods.push({
                 hour: hour,
                 mood: moodColors[Math.floor(Math.random() * moodColors.length)]
             });
         }
-        // 按时间排序
         return moods.sort((a, b) => a.hour - b.hour);
     }
 
-    // 月份切换
     document.getElementById('prev-month').addEventListener('click', () => {
         currentDate.setMonth(currentDate.getMonth() - 1);
         updateCalendar();
@@ -333,7 +292,6 @@
         updateCalendar();
     });
 
-    // 日历展开/折叠功能
     const calendarGrid = document.getElementById('calendar-grid');
     const calendarToggle = document.getElementById('calendar-toggle');
     
@@ -342,7 +300,6 @@
         calendarToggle.classList.toggle('expanded');
     });
 
-    // 初始化日历
     updateCalendar();
 
     // ============ 时间更新 ============
@@ -390,18 +347,110 @@
         }
     });
 
-    // ============ 健康指标四宫格弹窗 ============
+    // ============ 健康指标四宫格弹窗 (新逻辑) ============
     const healthModal = document.getElementById('health-modal');
     const openHealthBtn = document.getElementById('open-health-modal-btn');
     const closeHealthBtn = document.getElementById('close-health-modal-btn');
-    let balanceChart = null;
+    
+    let balanceChartNew = null;
+    let activityChartNew = null;
+
+    // 添加 Tooltip 点击事件监听
+    function initTooltips() {
+        const buttons = document.querySelectorAll('.info-btn');
+        
+        buttons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation(); // 防止冒泡关闭弹窗
+                const targetId = btn.getAttribute('data-target');
+                const tooltip = document.getElementById(targetId);
+                
+                // 关闭其他打开的 tooltip
+                document.querySelectorAll('.tooltip-box').forEach(t => {
+                    if(t.id !== targetId) t.classList.remove('active');
+                });
+                
+                // 切换当前 tooltip
+                if(tooltip) {
+                    tooltip.classList.toggle('active');
+                }
+            });
+        });
+
+        // 点击卡片其他区域关闭 Tooltip
+        document.addEventListener('click', () => {
+             document.querySelectorAll('.tooltip-box').forEach(t => t.classList.remove('active'));
+        });
+    }
+
+    // 初始化新的仪表盘 (条状风格)
+    function initializeNewCharts() {
+        const balanceDom = document.getElementById('balance-chart-new');
+        const activityDom = document.getElementById('activity-chart-new');
+        
+        if (balanceDom) balanceChartNew = echarts.init(balanceDom);
+        if (activityDom) activityChartNew = echarts.init(activityDom);
+
+        // 通用的仪表盘配置生成器
+        const createGaugeOption = (color1, color2) => ({
+            series: [{
+                type: 'gauge',
+                startAngle: 180,
+                endAngle: 0,
+                min: 0,
+                max: 100,
+                splitNumber: 20, // 分割成20个小条
+                radius: '110%',
+                center: ['50%', '85%'], // 半圆底部对齐
+                itemStyle: {
+                    color: '#FFAB91', // 默认颜色
+                },
+                progress: {
+                    show: true,
+                    width: 12,
+                    itemStyle: {
+                        color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+                            { offset: 0, color: color1 },
+                            { offset: 1, color: color2 }
+                        ])
+                    }
+                },
+                pointer: { show: false },
+                axisLine: {
+                    lineStyle: { width: 12, color: [[1, '#f0f0f0']] } // 灰色背景条
+                },
+                axisTick: { show: false },
+                splitLine: {
+                    length: 15,
+                    lineStyle: { width: 3, color: '#fff' } // 白色分割线创造"条状"效果
+                },
+                axisLabel: { show: false },
+                title: { show: false },
+                detail: { show: false },
+                data: [{ value: 0 }]
+            }]
+        });
+
+        // 蓝色/绿色调用于 Balance
+        if(balanceChartNew) balanceChartNew.setOption(createGaugeOption('#56CCF2', '#2F80ED'));
+        // 粉色/红色调用于 Activity
+        if(activityChartNew) activityChartNew.setOption(createGaugeOption('#FF9A9E', '#FECFEF'));
+    }
 
     openHealthBtn.addEventListener('click', () => {
         healthModal.style.display = 'flex';
         mainContent.style.filter = 'blur(5px)';
-        if (!balanceChart) {
-            initializeBalanceChart();
+        
+        // 确保图表已初始化
+        if (!balanceChartNew) {
+            initializeNewCharts();
+            initTooltips(); // 初始化提示框逻辑
         }
+        // 重新调整大小以适应
+        setTimeout(() => {
+            if(balanceChartNew) balanceChartNew.resize();
+            if(activityChartNew) activityChartNew.resize();
+        }, 100);
     });
 
     const closeHealthModal = () => {
@@ -439,7 +488,6 @@
         }
     });
 
-    // 绘制情绪图谱
     function drawEmotionMap() {
         const canvas = document.getElementById('emotion-map-canvas');
         if (!canvas) return;
@@ -455,11 +503,8 @@
         const centerY = size / 2;
         const maxRadius = size / 2 - 20;
         
-        // 清空画布
         ctx.clearRect(0, 0, size, size);
         
-        // 绘制渐变背景 - 模拟情绪色彩
-        // 随机生成一些情绪数据点
         const emotionPoints = [];
         const numPoints = 20 + Math.floor(Math.random() * 15);
         
@@ -469,20 +514,18 @@
             const x = centerX + radius * Math.cos(angle);
             const y = centerY + radius * Math.sin(angle);
             
-            // 随机选择情绪颜色
             const colors = [
-                { r: 255, g: 215, b: 0, a: 0.6 },    // Joy - 金黄色
-                { r: 255, g: 107, b: 107, a: 0.6 },  // Tense - 红色
-                { r: 135, g: 206, b: 235, a: 0.6 },  // Low - 天蓝色
-                { r: 144, g: 238, b: 144, a: 0.6 },  // Calm - 浅绿色
-                { r: 192, g: 192, b: 192, a: 0.4 }   // Neutral - 灰色
+                { r: 255, g: 215, b: 0, a: 0.6 },    
+                { r: 255, g: 107, b: 107, a: 0.6 },  
+                { r: 135, g: 206, b: 235, a: 0.6 },  
+                { r: 144, g: 238, b: 144, a: 0.6 },  
+                { r: 192, g: 192, b: 192, a: 0.4 }   
             ];
             
             const color = colors[Math.floor(Math.random() * colors.length)];
             emotionPoints.push({ x, y, color, size: 60 + Math.random() * 100 });
         }
         
-        // 绘制模糊的情绪色块
         emotionPoints.forEach(point => {
             const gradient = ctx.createRadialGradient(
                 point.x, point.y, 0,
@@ -497,86 +540,23 @@
             ctx.fillRect(0, 0, size, size);
         });
         
-        // 应用高斯模糊效果
         ctx.filter = 'blur(30px)';
         ctx.drawImage(canvas, 0, 0);
         ctx.filter = 'none';
         
-        // 绘制外圈
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
         ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.arc(centerX, centerY, maxRadius, 0, Math.PI * 2);
         ctx.stroke();
         
-        // 绘制中圈
         ctx.beginPath();
         ctx.arc(centerX, centerY, maxRadius * 0.6, 0, Math.PI * 2);
         ctx.stroke();
         
-        // 绘制内圈
         ctx.beginPath();
         ctx.arc(centerX, centerY, maxRadius * 0.3, 0, Math.PI * 2);
         ctx.stroke();
-    }
-
-    // 生成情绪时间线
-    function generateEmotionTimeline() {
-        const timelineDots = document.getElementById('emotion-timeline-dots');
-        if (!timelineDots) return;
-        
-        timelineDots.innerHTML = '';
-        
-        // 随机生成一天的情绪数据点
-        const emotions = ['joy', 'tense', 'low', 'calm', 'neutral'];
-        const numDots = 8 + Math.floor(Math.random() * 8);
-        
-        for (let i = 0; i < numDots; i++) {
-            const dot = document.createElement('div');
-            dot.className = `timeline-dot ${emotions[Math.floor(Math.random() * emotions.length)]}`;
-            
-            // 随机位置 (0-100%)
-            const position = (i / numDots) * 95 + Math.random() * 3;
-            dot.style.left = `${position}%`;
-            
-            timelineDots.appendChild(dot);
-        }
-    }
-
-    closeHealthBtn.addEventListener('click', closeHealthModal);
-    healthModal.addEventListener('click', (event) => {
-        if (event.target === healthModal) {
-            closeHealthModal();
-        }
-    });
-
-    function initializeBalanceChart() {
-        const chartDom = document.getElementById('balance-chart');
-        balanceChart = echarts.init(chartDom);
-        const option = {
-            series: [{
-                type: 'gauge',
-                radius: '100%',
-                startAngle: 180,
-                endAngle: 0,
-                min: 0,
-                max: 10,
-                splitNumber: 5,
-                axisLine: {
-                    lineStyle: {
-                        width: 8,
-                        color: [[0.3, '#4facfe'], [0.7, '#27ae60'], [1, '#e74c3c']]
-                    }
-                },
-                pointer: { show: false },
-                axisTick: { show: false },
-                splitLine: { show: false },
-                axisLabel: { show: false },
-                detail: { show: false },
-                data: [{ value: 0 }]
-            }]
-        };
-        balanceChart.setOption(option);
     }
 
     function initializeModalCharts() {
@@ -587,23 +567,19 @@
         const hrOption = {
             title: { text: '心率监测', left: 'center', textStyle: { fontSize: 14 } },
             tooltip: { trigger: 'axis' },
-            grid: { left: 50, right: 30, top: 50, bottom: 30, containLabel: true }, /* 减小底部边距 */
+            grid: { left: 50, right: 30, top: 50, bottom: 30, containLabel: true },
             xAxis: { 
                 type: 'category', 
                 boundaryGap: false, 
-                axisLabel: { 
-                    show: false  /* 隐藏横坐标数值 */
-                },
-                axisTick: {
-                    show: false  /* 隐藏刻度线 */
-                }
+                axisLabel: { show: false },
+                axisTick: { show: false }
             },
             yAxis: { 
                 type: 'value', 
                 name: 'BPM', 
                 nameLocation: 'middle',
                 nameGap: 40,
-                splitNumber: 4,  /* 只显示4-5个刻度 */
+                splitNumber: 4,
                 axisLabel: { formatter: (v) => Math.round(Number(v)) } 
             },
             series: [{ type: 'line', showSymbol: false, smooth: true, lineStyle: { width: 2, color: '#f5576c' }, areaStyle: { opacity: 0.15, color: '#f5576c' }, data: [] }]
@@ -611,23 +587,19 @@
         const brOption = {
             title: { text: '呼吸率监测', left: 'center', textStyle: { fontSize: 14 } },
             tooltip: { trigger: 'axis' },
-            grid: { left: 50, right: 30, top: 50, bottom: 30, containLabel: true }, /* 减小底部边距 */
+            grid: { left: 50, right: 30, top: 50, bottom: 30, containLabel: true },
             xAxis: { 
                 type: 'category', 
                 boundaryGap: false, 
-                axisLabel: { 
-                    show: false  /* 隐藏横坐标数值 */
-                },
-                axisTick: {
-                    show: false  /* 隐藏刻度线 */
-                }
+                axisLabel: { show: false },
+                axisTick: { show: false }
             },
             yAxis: { 
                 type: 'value', 
                 name: 'RPM', 
                 nameLocation: 'middle',
                 nameGap: 40,
-                splitNumber: 4,  /* 只显示4-5个刻度 */
+                splitNumber: 4,
                 axisLabel: { formatter: (v) => Math.round(Number(v)) } 
             },
             series: [{ type: 'line', showSymbol: false, smooth: true, lineStyle: { width: 2, color: '#00f2fe' }, areaStyle: { opacity: 0.15, color: '#00f2fe' }, data: [] }]
@@ -637,7 +609,7 @@
         window.modalCharts = { hr: modalHrChart, br: modalBrChart };
     }
 
-    // ============ 数据更新逻辑（整合自 app.js）============
+    // ============ 数据更新逻辑 ============
     
     function safeArray(a) { 
         return Array.isArray(a) ? a : []; 
@@ -648,19 +620,15 @@
         const hr = safeArray(state.hr);
         const br = safeArray(state.br);
         
-        // 固定显示最近30个数据点（约30秒）
         const maxPoints = 30;
         const startIdx = Math.max(0, t.length - maxPoints);
         
-        // 截取最近的数据
         const tSliced = t.slice(startIdx);
         const hrSliced = hr.slice(startIdx);
         const brSliced = br.slice(startIdx);
         
-        // 将时间转换为相对时间（从0开始）
         const tStr = tSliced.map((time, idx) => String(idx));
         
-        // 更新弹窗中的图表（如果已初始化）
         if (modalHrChart && modalBrChart) {
             modalHrChart.setOption({ 
                 xAxis: { 
@@ -682,69 +650,86 @@
     }
 
     function updateHealthCards(state) {
-        // 更新抗压水平 (SDNN)
+        // 1. 更新压力水平 (SDNN)
+        // 逻辑: SDNN 越高(好)，压力越低。左(0%)是高SDNN(好-绿)，右(100%)是低SDNN(差-红)
+        // 假设 100ms 是非常好的状态，0ms 是非常差的状态
         const sdnn = safeArray(state.sdnn);
         if (sdnn.length > 0) {
-            const sdnnValue = Math.round(sdnn[sdnn.length - 1]);
+            let sdnnValue = Math.round(sdnn[sdnn.length - 1]);
+            if (sdnnValue > 200) sdnnValue = 200; 
+            
             document.getElementById('stress-level-value').textContent = sdnnValue;
+            
+            // 计算滑块位置: 100ms -> 0%, 0ms -> 100%
+            let percentage = 100 - (sdnnValue / 100 * 100);
+            percentage = Math.max(0, Math.min(100, percentage)); 
+            
+            document.getElementById('stress-cursor').style.left = `${percentage}%`;
         }
 
-        // 更新压力调节恢复能力 (valence_score) - 归一化为百分比
+        // 2. 更新恢复能力 (Valence)
+        // 假设 valence_score 归一化后是 0.0 - 1.0 (0=差, 1=好)
         if (state.valence_score !== null && state.valence_score !== undefined) {
-            // 假设valence_score范围是0-1，转换为百分比
-            state.valence_score = (state.valence_score + 3)/6
-            const valencePercent = Math.round(state.valence_score * 100);
-            document.getElementById('recovery-value').textContent = valencePercent + '%';
+            // 这里假设后端传回的是 -3 到 3 的值，转为 0-1
+             const valNorm = (state.valence_score + 3)/6;
+             let valencePercent = Math.round(valNorm * 100);
+             valencePercent = Math.max(0, Math.min(100, valencePercent));
+
+            document.getElementById('recovery-value').textContent = Math.round(state.valence_score * 10) / 10;
+            
+            // 左边(0%) = 差(红), 右边(100%) = 好(绿)
+            document.getElementById('recovery-cursor').style.left = `${valencePercent}%`;
         } else {
             document.getElementById('recovery-value').textContent = '--';
         }
 
-        // 更新自主神经平衡 (LF/HF Ratio)
+        // 3. 更新自主神经平衡 (LF/HF Ratio)
         const ratio = safeArray(state.lf_hf);
         if (ratio.length > 0) {
-            const ratioValue = Number(ratio[ratio.length - 1]).toFixed(2);
+            const ratioValue = Number(ratio[ratio.length - 1]).toFixed(1);
             document.getElementById('balance-value').textContent = ratioValue;
             
-            // 更新仪表盘
-            if (balanceChart) {
-                balanceChart.setOption({
-                    series: [{
-                        data: [{ value: Math.min(ratioValue, 10) }]
-                    }]
+            // 仪表盘映射: 假设 0-5 范围
+            const chartVal = (ratioValue / 5) * 100;
+            
+            if (balanceChartNew) {
+                balanceChartNew.setOption({
+                    series: [{ data: [{ value: Math.min(chartVal, 100) }] }]
                 });
             }
         }
 
-        // 更新自主神经活性 (arousal_score) - 归一化为百分比
+        // 4. 更新自主神经活性 (Arousal)
         if (state.arousal_score !== null && state.arousal_score !== undefined) {
-            // 假设arousal_score范围是0-1，转换为百分比
-            state.arousal_score = (state.arousal_score + 3)/6
-            const arousalPercent = Math.round(state.arousal_score * 100);
-            document.getElementById('activity-value').textContent = arousalPercent + '%';
+            // 假设 arousal_score 也是 -3 到 3
+            const arousalNorm = (state.arousal_score + 3)/6;
+            const arousalPercent = Math.round(arousalNorm * 100);
+            
+            document.getElementById('activity-value').textContent = Math.round(state.arousal_score * 10) / 10;
+            
+            if (activityChartNew) {
+                activityChartNew.setOption({
+                    series: [{ data: [{ value: arousalPercent }] }]
+                });
+            }
         } else {
             document.getElementById('activity-value').textContent = '--';
         }
     }
 
     function updateMoodStatus(state) {
-        // 更新情绪状态显示
         if (state.emotion_state && state.emotion_state !== null) {
             const emotionState = state.emotion_state;
             const t = translations[currentLang];
             
-            // 更新文字
             const moodText = t.emotions[emotionState] || emotionState;
             document.querySelector('.mood-text h2').textContent = moodText;
             
-            // 更新提示文字
             const promptText = t.prompts[emotionState] || t.moodPrompt;
             document.querySelector('.mood-prompt').textContent = promptText;
             
-            // 移除所有情绪状态类
             const moodVisual = document.querySelector('.mood-visual');
             moodVisual.classList.remove('mood-joy', 'mood-tense', 'mood-low', 'mood-calm', 'mood-neutral');
-            
-            // 添加对应的情绪状态类
             moodVisual.classList.add(`mood-${emotionState.toLowerCase()}`);
         }
     }
@@ -761,25 +746,21 @@
         }
     }
 
-    // 开始定期获取数据
     fetchState();
     setInterval(fetchState, 1000);
 
-    // 窗口大小改变时调整图表
     window.addEventListener('resize', () => {
         if (modalHrChart) modalHrChart.resize();
         if (modalBrChart) modalBrChart.resize();
-        if (balanceChart) balanceChart.resize();
+        if (balanceChartNew) balanceChartNew.resize();
+        if (activityChartNew) activityChartNew.resize();
     });
 
-    // ============ 初始化语言功能（放在最后） ============
-    // 语言切换按钮
     document.getElementById('lang-toggle-btn').addEventListener('click', () => {
         const newLang = currentLang === 'zh' ? 'en' : 'zh';
         switchLanguage(newLang);
     });
 
-    // 初始化语言
     switchLanguage(currentLang);
 
 });

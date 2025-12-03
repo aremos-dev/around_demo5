@@ -419,6 +419,7 @@ h1, h2, h3, p, span {
     border: none;
     background: none;
     cursor: pointer;
+    z-index: 20;
 }
 
 /* 弹窗内的图表 */
@@ -459,10 +460,11 @@ h1, h2, h3, p, span {
     box-sizing: border-box; /* 确保padding不会导致溢出 */
 }
 
-/* 健康指标四宫格弹窗 */
+/* ============ 新版健康卡片样式 ============ */
+
 .health-modal-content {
-    max-width: 375px;
-    padding: 20px;
+    background: #f2f4f6; /* 整体背景稍微灰一点，突出卡片 */
+    padding: 24px 16px;
 }
 
 .modal-title {
@@ -475,98 +477,179 @@ h1, h2, h3, p, span {
 
 .health-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: 1fr 1fr; /* 两列 */
     gap: 12px;
 }
 
 .health-card {
-    background: #f8f9fa;
-    border-radius: 16px;
+    background: #ffffff;
+    border-radius: 20px;
     padding: 16px;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    text-align: center;
-    position: relative;
-    overflow: hidden;
-    transition: transform 0.2s;
+    justify-content: space-between;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    position: relative; /* 为了定位 Tooltip */
+    min-height: 140px;
 }
 
-.health-card:hover {
-    transform: translateY(-2px);
+/* 头部样式 */
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 10px;
 }
 
-.health-card.stress-level {
-    background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+.header-left {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
 }
 
-.health-card.recovery {
-    background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
-}
-
-.health-card.balance {
-    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
-}
-
-.health-card.activity {
-    background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%);
-}
-
-.health-icon {
-    font-size: 32px;
-    margin-bottom: 8px;
+.icon-small {
+    font-size: 18px;
+    opacity: 0.7;
 }
 
 .health-card h3 {
-    font-size: 12px;
-    font-weight: 600;
-    color: #555;
-    margin-bottom: 12px;
-    line-height: 1.3;
-}
-
-.health-wave {
-    width: 100%;
-    height: 40px;
-    margin: 8px 0;
-    color: rgba(0, 0, 0, 0.3);
-}
-
-.health-wave svg {
-    width: 100%;
-    height: 100%;
-}
-
-.health-line-icon {
-    width: 60px;
-    height: 30px;
-    margin: 8px 0;
-    color: rgba(0, 0, 0, 0.25);
-}
-
-.health-line-icon svg {
-    width: 100%;
-    height: 100%;
-}
-
-.health-chart {
-    width: 60px;
-    height: 60px;
-    margin: 8px 0;
-}
-
-.health-value {
-    font-size: 28px;
-    font-weight: 700;
-    color: #333;
-    margin: 4px 0;
-}
-
-.health-unit {
-    font-size: 11px;
+    font-size: 13px;
     color: #888;
+    font-weight: 500;
     margin: 0;
 }
+
+/* Info 按钮 */
+.info-btn {
+    background: #f0f0f0;
+    border: none;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    font-size: 12px;
+    color: #999;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: serif; /* 让 'i' 看起来更像图标 */
+}
+
+.info-btn:hover {
+    background: #e0e0e0;
+    color: #333;
+}
+
+/* Tooltip 弹窗 */
+.tooltip-box {
+    position: absolute;
+    top: 40px;
+    left: 10px;
+    right: 10px;
+    background: rgba(255, 255, 255, 0.95);
+    padding: 12px;
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    z-index: 10;
+    font-size: 12px;
+    color: #555;
+    display: none; /* 默认隐藏 */
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(0,0,0,0.05);
+}
+
+.tooltip-box.active {
+    display: block;
+    animation: fadeIn 0.2s ease;
+}
+
+.tooltip-box strong {
+    color: #333;
+    display: block;
+    margin-bottom: 4px;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* 数值显示 */
+.value-display {
+    margin-top: auto;
+}
+
+.value-display.overlay {
+    /* 仪表盘类型的数值需要稍微上移一点 */
+    margin-top: -10px; 
+    text-align: center;
+}
+
+.big-num {
+    font-size: 28px;
+    font-weight: 600;
+    color: #333;
+    display: block;
+    line-height: 1;
+}
+
+.unit {
+    font-size: 10px;
+    color: #aaa;
+    margin-top: 4px;
+    display: block;
+}
+
+/* ============ 线性滑块 (Stress & Recovery) ============ */
+.gauge-container {
+    position: relative;
+    height: 20px;
+    width: 100%;
+    margin: 10px 0 15px 0;
+    display: flex;
+    align-items: center;
+}
+
+.linear-gauge-bg {
+    width: 100%;
+    height: 6px;
+    border-radius: 3px;
+    position: absolute;
+}
+
+/* 压力渐变: 左(低压/好-绿) -> 右(高压/坏-红) */
+.gradient-stress {
+    background: linear-gradient(90deg, #a8e6cf 0%, #dcedc1 40%, #ffd3b6 70%, #ffaaa5 100%);
+}
+
+/* 恢复渐变: 左(低/差-红) -> 右(高/好-绿) */
+.gradient-recovery {
+    background: linear-gradient(90deg, #ffaaa5 0%, #ffd3b6 30%, #dcedc1 60%, #a8e6cf 100%);
+}
+
+.gauge-cursor {
+    width: 12px;
+    height: 12px;
+    background: #555;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%); /* 居中 */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    transition: left 0.5s cubic-bezier(0.25, 1, 0.5, 1); /* 平滑移动动画 */
+}
+
+/* ============ 仪表盘 (Balance & Activity) ============ */
+.gauge-chart-box {
+    width: 100%;
+    height: 80px; /* 控制仪表盘高度 */
+    margin-top: 5px;
+}
+
+/* 特殊卡片背景色微调 (模仿原图的粉色调) */
+.stress-card { background: linear-gradient(160deg, #fff5f5 0%, #ffffff 100%); }
+.recovery-card { background: linear-gradient(160deg, #f0fff4 0%, #ffffff 100%); }
 
 /* 情绪图谱按钮 */
 .emotion-map-btn {
@@ -612,122 +695,4 @@ h1, h2, h3, p, span {
     left: 0;
     width: 100%;
     height: 100%;
-}
-
-.emotion-map-center {
-    position: relative;
-    z-index: 10;
-    text-align: center;
-    color: white;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-}
-
-.emotion-map-center h3 {
-    font-size: 36px;
-    font-weight: 300;
-    margin: 0 0 8px 0;
-    color: white;
-}
-
-.emotion-map-center p {
-    font-size: 14px;
-    margin: 0;
-    opacity: 0.9;
-    color: white;
-}
-
-/* 情绪日历周视图 */
-.emotion-calendar-week {
-    display: flex;
-    justify-content: space-around;
-    margin: 20px 0;
-    padding: 12px;
-    background: #f5f5f5;
-    border-radius: 12px;
-}
-
-.weekday-small {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: 11px;
-    color: #999;
-    padding: 8px;
-    border-radius: 8px;
-    min-width: 36px;
-    text-align: center;
-    line-height: 1.4;
-    transition: all 0.3s;
-}
-
-.weekday-small.active {
-    background: #4a90e2;
-    color: white;
-    font-weight: 600;
-}
-
-/* 情绪时间线 */
-.emotion-timeline {
-    margin-top: 20px;
-    position: relative;
-}
-
-.timeline-dots {
-    position: relative;
-    height: 40px;
-    background: linear-gradient(to right, #f0f0f0 0%, #f0f0f0 100%);
-    border-radius: 20px;
-    margin-bottom: 8px;
-    display: flex;
-    align-items: center;
-    padding: 0 4px;
-}
-
-.timeline-dot {
-    position: absolute;
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    border: 2px solid white;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-    transition: transform 0.2s;
-}
-
-.timeline-dot:hover {
-    transform: scale(1.3);
-}
-
-.timeline-dot.joy {
-    background-color: #FFD700;
-}
-
-.timeline-dot.tense {
-    background-color: #FF6B6B;
-}
-
-.timeline-dot.low {
-    background-color: #87CEEB;
-}
-
-.timeline-dot.calm {
-    background-color: #90EE90;
-}
-
-.timeline-dot.neutral {
-    background-color: #C0C0C0;
-}
-
-.timeline-labels-small {
-    display: flex;
-    justify-content: space-between;
-    font-size: 10px;
-    color: #999;
-    padding: 0 4px;
-}
-
-.timeline-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
 }

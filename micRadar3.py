@@ -4,6 +4,7 @@ import time
 import threading
 from collections import deque
 from HRVcalculate import HRVcalculate
+from emotion_dete import EmotionDetector
 
 class MicRadar:
     def __init__(self, port="COM14", baudrate=115200, window_size=40):
@@ -30,6 +31,9 @@ class MicRadar:
         self.LF_HF_ratio = None
 
         self.hrv_calculator = HRVcalculate(self, None, window_size=self.window_size)
+        self.emotion_detector = EmotionDetector()
+        self.arousal = None
+        self.valence = None
 
     def wait_for_ack(self, expected_cmd, timeout=3):
         """
@@ -198,6 +202,12 @@ class MicRadar:
                     self.HF = HF
                     self.LF_HF_ratio = LF_HF_ratio
                     # print(f"LF/HF Ratio_Rad: {LF_HF_ratio:.2f}, LF: {LF:.2f} ms^2, HF: {HF:.2f} ms^2")
+
+                if len(self.heart_rate) >= 60 and len(self.breath_rate) >= 60:
+                    self.arousal, self.valence = self.emotion_detector.predict_from_signals(
+                        list(self.heart_rate)[-60:], 
+                        list(self.breath_rate)[-60:]
+                    )
                 
                 time.sleep(3)  # 避免多次输出
 
@@ -245,7 +255,7 @@ class MicRadar:
         return True
 
 if __name__ == "__main__":
-    radar = MicRadar(port = '/dev/ttyS3') 
+    radar = MicRadar(port = '/dev/ttyS5') 
     # radar = MicRadar(port = 'COM14') 
     radar.connect()
     radar.start_continuous_reading()

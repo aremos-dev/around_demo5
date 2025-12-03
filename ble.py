@@ -123,12 +123,12 @@ class BLE():
                     self.sdnn.append(valid_data[2])
                     self.rri.extend(valid_data[3:6])
                     self.voltage = self.calculate_percentage_lookup(valid_data[6] / 10)
-                    self.gyroscope.append(valid_data[8])  # 低4位为shake
-                    self.touch.append((valid_data[7]) & 0x0F)  # 高4位为touch
+                    self.gyroscope.append(valid_data[7])  # 低4位为shake
+                    # self.touch.append((valid_data[7]) & 0x0F)  # 高4位为touch
 
                     self.data_valid = True
                     print(f"收到数据帧: HR={valid_data[0]}, SpO2={valid_data[1]}, SDNN={valid_data[2]}, "\
-                          f"RRI={valid_data[3:6]}, V={valid_data[6]}, touch={valid_data[7]},gyro={valid_data[8]}")
+                          f"RRI={valid_data[3:6]}, V={valid_data[6]},gyro={valid_data[7]}")
 
                 # 从缓冲区移除已处理的帧
                 self.receive_buffer = self.receive_buffer[self.frame_size:]
@@ -220,15 +220,14 @@ class BLE():
                 b"p=0\n"
             )
             print("已发送 p=0 指令以停止数据采集。")
-
+    
     def stop_reading_sync(self,):
-        """同步版本的stop_reading方法"""
         if self.loop and self.loop.is_running():
             future = asyncio.run_coroutine_threadsafe(self.stop_reading(), self.loop)
             future.result(timeout=5.0)
         else:
-            asyncio.run(self.color())
-    
+            asyncio.run(self.stop_reading(vm))
+
     async def disconnect(self):
         """断开设备连接"""
         if self.client and self.client.is_connected:
@@ -491,7 +490,7 @@ class BLE():
 
 if __name__ == "__main__":
      # 在初始化时重置蓝牙
-    ble = BLE(device_name="demo6_2", max_buffer_size=120)
+    ble = BLE(device_name="demo6_5", max_buffer_size=120)
     # 直接开始连续读取，connect 会在后台线程中自动执行
     ble.start_continuous_reading()
     time.sleep(5)
@@ -501,8 +500,9 @@ if __name__ == "__main__":
     time.sleep(0.5)
     ble.mode_sync(3)
     time.sleep(1)
-    ble.stop_reading_sync()
     # ble.color_sync(0,0,255)
+    time.sleep(1)
+    ble.stop_reading_sync()
     
     
     # time.sleep(100)

@@ -142,39 +142,35 @@ class DataVisualizer:
                 payload['is_abnormal'] = self.is_abnormal_state
                 # 添加 lf_hf 作为 lf_hf_ratio 的别名，方便前端访问
                 payload['lf_hf'] = payload.get('lf_hf_ratio', [])
-                # 添加FSM实例的情绪评分数据
-                if hasattr(self, 'fsm_instance') and self.fsm_instance:
-                    payload['arousal_score'] = self.fsm_instance.arousal_score
-                    payload['valence_score'] = self.fsm_instance.valence_score
+                # 添加radar实例的情绪评分数据（通过fsm_instance访问）
+                if hasattr(self, 'fsm_instance') and self.fsm_instance and self.fsm_instance.radar:
+                    payload['arousal_score'] = self.fsm_instance.radar.arousal
+                    payload['valence_score'] = self.fsm_instance.radar.valence
                     
-                    # 计算情绪状态
-                    arousal = self.fsm_instance.arousal_score
-                    valence = self.fsm_instance.valence_score
+                    # 计算情绪状态（二分类：arousal和valence都只有0或1）
+                    arousal = self.fsm_instance.radar.arousal
+                    valence = self.fsm_instance.radar.valence
                     
                     if arousal is not None and valence is not None:
-                        # 计算程度
-                        degree = (arousal**2 + valence**2)**0.5
-                        
-                        # 判断状态
-                        if degree < 1:
-                            emotion_state = 'Neutral'
-                            emotion_intensity = 'Neutral'
-                        else:
-                            # 判断象限
-                            if arousal > 0 and valence > 0:
-                                emotion_state = 'Joy'
-                            elif arousal > 0 and valence <= 0:
-                                emotion_state = 'Tense'
-                            elif arousal <= 0 and valence <= 0:
-                                emotion_state = 'Low'
-                            else:
-                                emotion_state = 'Calm'
-                            
-                            # 判断强度
-                            if degree < 2:
-                                emotion_intensity = 'Mild'
-                            else:
-                                emotion_intensity = 'Moderate'
+                        # 根据2x2象限判断情绪状态
+                        # Arousal (唤醒度): 0=Low (平静/冥想), 1=High (压力/娱乐)
+                        # Valence (效价): 0=Negative/Neutral (压力/平静), 1=Positive (娱乐/冥想)
+                        if arousal == 1 and valence == 0:
+                            # 高唤醒 + 消极 = 压力
+                            emotion_state = 'Stress'
+                            emotion_intensity = 'High'
+                        elif arousal == 1 and valence == 1:
+                            # 高唤醒 + 积极 = 娱乐
+                            emotion_state = 'Entertainment'
+                            emotion_intensity = 'High'
+                        elif arousal == 0 and valence == 0:
+                            # 低唤醒 + 消极 = 平静
+                            emotion_state = 'Calm'
+                            emotion_intensity = 'Low'
+                        else:  # arousal == 0 and valence == 1
+                            # 低唤醒 + 积极 = 冥想
+                            emotion_state = 'Meditation'
+                            emotion_intensity = 'Low'
                         
                         payload['emotion_state'] = emotion_state
                         payload['emotion_intensity'] = emotion_intensity

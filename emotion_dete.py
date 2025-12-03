@@ -14,11 +14,11 @@ from scipy.stats import linregress
 # =========================================
 # 配置项
 # =========================================
-WESAD_ROOT_DIR = ''   # 你的 WESAD 文件夹路径,下面应该有 S2/S2.pkl, S3/S3.pkl...
+WESAD_ROOT_DIR = 'around_demo5/'   # 你的 WESAD 文件夹路径,下面应该有 S2/S2.pkl, S3/S3.pkl...
 SAMPLING_RATE = 700
 WINDOW_SIZE = 60
 STEP_SIZE = 10
-MODEL_SAVE_PATH = 'stress_detection_model.pkl'  # 模型保存路径
+MODEL_SAVE_PATH = 'around_demo5/stress_detection_model.pkl'  # 模型保存路径
 
 # WESAD 所有受试者 ID (S12 数据通常有问题,一般排除)
 SUBJECT_IDS = ['S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S10', 'S11', 'S13', 'S14', 'S15', 'S16', 'S17']

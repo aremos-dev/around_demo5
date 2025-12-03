@@ -7,10 +7,13 @@ from collections import deque
 from datetime import datetime
 
 class radarrecoder():
-    def __init__(self, max_buffer_size=1000, csv_filename=None):
+    def __init__(self, port="COM14", baudrate=115200, max_buffer_size=1000, csv_filename=None):
         # 使用循环缓冲区,只保留最近的数据
         self.heart = deque(maxlen=max_buffer_size)
         self.resp = deque(maxlen=max_buffer_size)
+        self.port = port
+        self.baudrate = baudrate
+        self.buffer = bytearray()
         
         # CSV文件设置
         if csv_filename is None:
@@ -189,7 +192,7 @@ class radarrecoder():
     
 
 if __name__ == "__main__":
-    radar = radarrecoder(port = '/dev/ttyS3') 
+    radar = radarrecoder(port = '/dev/ttyS5') 
     # radar = MicRadar(port = 'COM14') 
     radar.connect()
     radar.start_continuous_reading()

@@ -70,7 +70,7 @@ class FSM():
         
         # 根据数据源初始化相应的设备
         if data_source in ['radar', 'both']:
-            self.radar = MicRadar(port = '/dev/ttyS3',window_size=20)
+            self.radar = MicRadar(port ='/dev/ttyS5',window_size=20)
         else:
             self.radar = None
             
@@ -152,11 +152,11 @@ class FSM():
         t_state = threading.Thread(target=self.state_monitor, daemon=True)
         t_state.start()
 
-        emotion_recorder = threading.Thread(
-            target=self.emotion_monitor,
-            daemon=True,
-        )
-        emotion_recorder.start()
+        # emotion_recorder = threading.Thread(
+        #     target=self.emotion_monitor,
+        #     daemon=True,
+        # )
+        # emotion_recorder.start()
         
         print("[INFO] 所有线程已启动，FSM运行中...")
 
@@ -195,7 +195,7 @@ if __name__ == "__main__":
     data_source = 'radar'  # 修改为ppg以测试串口连接
     enable_visualization = True  # 设置为True启用可视化
     viz_port = 5000  # 可视化服务端口
-    ble_instance = BLE(device_name="demo6_1", max_buffer_size=120)
+    ble_instance = BLE(device_name="demo6_3", max_buffer_size=120)
 
     
     fsm_instance = FSM(

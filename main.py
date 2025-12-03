@@ -13,7 +13,7 @@ from data_recorder import DataRecorder
 
 class dot():
     def __init__(self, data_source='both'):
-        self.ble = BLE(device_name="demo6_1")
+        self.ble = BLE(device_name="demo6_2")
         self.fsm = FSM(data_source=data_source, enable_visualization=True, viz_port=5000, ble_instance=self.ble)
         self.recorder = DataRecorder(self.fsm)
         self.is_here = False
@@ -24,7 +24,7 @@ class dot():
 
     def waiting_to_start(self):
         start = time.time()
-        while time.time() - start < 30:
+        while time.time() - start < 10:
             if len(self.fsm.radar.heart_rate) > 0:
                 x = len(self.fsm.radar.heart_rate)
                 time.sleep(5)
@@ -32,7 +32,7 @@ class dot():
                     break
             print(f'past time:{time.time() - start}')
             time.sleep(5)
-        if time.time() - start >= 30:
+        if time.time() - start >= 10:
             self.is_here = True
             if self.ble.is_connected:
                 print("BLE device connected successfully.")
@@ -54,7 +54,7 @@ class dot():
         while 1:
             if len(self.fsm.radar.heart_rate) > 0:
                 x = len(self.fsm.radar.heart_rate)
-                time.sleep(10)
+                time.sleep(5)
                 if len(self.fsm.radar.heart_rate) <= x:
                     self.is_here = False
                     print('nobody')
@@ -157,7 +157,7 @@ class dot():
             time.sleep(0.1)
 
     def wait_to_accumulate(self,):
-        self.ble.mode_sync(1)
+        self.ble.mode_sync(6)
         time.sleep(60)
         self.ble.mode_sync(3)
         
@@ -172,25 +172,25 @@ class dot():
                 while self.is_here:
                     self.ble.color_sync(0,0,255)
                     if not self.is_levitating:
-                        # time.sleep(10)
-                        # if self.fsm.ppg_device.heartrate == 0:
-                        #     self.ble.mode_sync(2)
-                        #     print('usr is not touch the ppg')
-                        #     while not self.is_levitating:
-                        #         if self.ble.gyroscope[-1] == 2:
-                        #             self.mindset_wander()
-                        #             self.stop_interaction()
-                        #             break
-                        #         elif self.ble.gyroscope[-1] == 1:
-                        #             self.Stress_relief()
-                        #             self.stop_interaction()
-                        #             break
-                        #         elif self.ble.gyroscope[-1] == 0:
-                        #             time.sleep(1)
-                        # else :
-                        print('usr take the dot')#只保留疲劳模式
-                        self.fatigue_breath_guide()
-                        break
+                        time.sleep(10)
+                        if self.fsm.ppg_device.heartrate == 0:
+                            self.ble.mode_sync(2)
+                            print('usr is not touch the ppg')
+                            while not self.is_levitating:
+                                if self.ble.gyroscope[-1] == 2:
+                                    self.mindset_wander()
+                                    self.stop_interaction()
+                                    break
+                                elif self.ble.gyroscope[-1] == 1:
+                                    self.Stress_relief()
+                                    self.stop_interaction()
+                                    break
+                                elif self.ble.gyroscope[-1] == 0:
+                                    time.sleep(1)
+                        else :
+                            print('usr take the dot')#只保留疲劳模式
+                            self.fatigue_breath_guide()
+                            break
                     # elif (self.fsm.stress_assessment['details']['sdnn']['deviation'] > 10 or \
                     #             self.fsm.stress_assessment['details']['sdnn']['deviation'] < -10 or \
                     #             self.fsm.stress_assessment['details']['lf_hf_ratio']['deviation'] > 10 or \
