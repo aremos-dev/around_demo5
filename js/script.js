@@ -354,6 +354,8 @@
     
     let balanceChartNew = null;
     let activityChartNew = null;
+    let stressChartNew = null;
+    let recoveryChartNew = null;
 
     // 添加 Tooltip 点击事件监听
     function initTooltips() {
@@ -387,37 +389,42 @@
     function initializeNewCharts() {
         const balanceDom = document.getElementById('balance-chart-new');
         const activityDom = document.getElementById('activity-chart-new');
+        const stressDom = document.getElementById('stress-chart-new');
+        const recoveryDom = document.getElementById('recovery-chart-new');
         
         if (balanceDom) balanceChartNew = echarts.init(balanceDom);
         if (activityDom) activityChartNew = echarts.init(activityDom);
+        if (stressDom) stressChartNew = echarts.init(stressDom);
+        if (recoveryDom) recoveryChartNew = echarts.init(recoveryDom);
 
         // 通用的仪表盘配置生成器
-        const createGaugeOption = (color1, color2) => ({
+        const createGaugeOption = (ranges) => ({
             series: [{
                 type: 'gauge',
                 startAngle: 180,
                 endAngle: 0,
                 min: 0,
                 max: 100,
-                splitNumber: 20, // 分割成20个小条
+                splitNumber: 10, // 分割成10个小条
                 radius: '110%',
                 center: ['50%', '85%'], // 半圆底部对齐
                 itemStyle: {
                     color: '#FFAB91', // 默认颜色
                 },
                 progress: {
-                    show: true,
-                    width: 12,
-                    itemStyle: {
-                        color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
-                            { offset: 0, color: color1 },
-                            { offset: 1, color: color2 }
-                        ])
-                    }
+                    show: false
                 },
-                pointer: { show: false },
+                pointer: { 
+                    show: true,
+                    length: '60%',
+                    width: 4,
+                    itemStyle: { color: '#5C5C66' }
+                },
                 axisLine: {
-                    lineStyle: { width: 12, color: [[1, '#f0f0f0']] } // 灰色背景条
+                    lineStyle: { 
+                        width: 12, 
+                        color: ranges 
+                    } 
                 },
                 axisTick: { show: false },
                 splitLine: {
@@ -431,10 +438,17 @@
             }]
         });
 
-        // 蓝色/绿色调用于 Balance
-        if(balanceChartNew) balanceChartNew.setOption(createGaugeOption('#56CCF2', '#2F80ED'));
-        // 粉色/红色调用于 Activity
-        if(activityChartNew) activityChartNew.setOption(createGaugeOption('#FF9A9E', '#FECFEF'));
+        // Stress: 0-25% (Red), 25-50% (Yellow), 50-100% (Green)
+        if(stressChartNew) stressChartNew.setOption(createGaugeOption([[0.25, '#FF6B6B'], [0.5, '#FFD93D'], [1, '#6BCB77']]));
+        
+        // Recovery: 0-33% (Red), 33-66% (Yellow), 66-100% (Green)
+        if(recoveryChartNew) recoveryChartNew.setOption(createGaugeOption([[0.33, '#FF6B6B'], [0.66, '#FFD93D'], [1, '#6BCB77']]));
+
+        // Balance: 0-10% (Blue), 10-40% (Green), 40-100% (Red)
+        if(balanceChartNew) balanceChartNew.setOption(createGaugeOption([[0.1, '#4D96FF'], [0.4, '#6BCB77'], [1, '#FF6B6B']]));
+        
+        // Activity: 0-33% (Blue), 33-66% (Green), 66-100% (Red)
+        if(activityChartNew) activityChartNew.setOption(createGaugeOption([[0.33, '#4D96FF'], [0.66, '#6BCB77'], [1, '#FF6B6B']]));
     }
 
     openHealthBtn.addEventListener('click', () => {
@@ -651,8 +665,8 @@
 
     function updateHealthCards(state) {
         // 1. 更新压力水平 (SDNN)
-        // 逻辑: SDNN 越高(好)，压力越低。左(0%)是高SDNN(好-绿)，右(100%)是低SDNN(差-红)
-        // 假设 100ms 是非常好的状态，0ms 是非常差的状态
+        // 逻辑: SDNN 越高(好)，压力越低。
+        // 范围: 0-200ms. 映射到 0-100%
         const sdnn = safeArray(state.sdnn);
         if (sdnn.length > 0) {
             let sdnnValue = Math.round(sdnn[sdnn.length - 1]);
@@ -660,25 +674,31 @@
             
             document.getElementById('stress-level-value').textContent = sdnnValue;
             
-            // 计算滑块位置: 100ms -> 0%, 0ms -> 100%
-            let percentage = 100 - (sdnnValue / 100 * 100);
+            // 映射: 0-200 -> 0-100
+            let percentage = (sdnnValue / 200) * 100;
             percentage = Math.max(0, Math.min(100, percentage)); 
             
-            document.getElementById('stress-cursor').style.left = `${percentage}%`;
+            if (stressChartNew) {
+                stressChartNew.setOption({
+                    series: [{ data: [{ value: percentage }] }]
+                });
+            }
         }
 
         // 2. 更新恢复能力 (Valence)
-        // 假设 valence_score 归一化后是 0.0 - 1.0 (0=差, 1=好)
+        // 范围: -3 到 3. 映射到 0-100%
         if (state.valence_score !== null && state.valence_score !== undefined) {
-            // 这里假设后端传回的是 -3 到 3 的值，转为 0-1
              const valNorm = (state.valence_score + 3)/6;
              let valencePercent = Math.round(valNorm * 100);
              valencePercent = Math.max(0, Math.min(100, valencePercent));
 
             document.getElementById('recovery-value').textContent = Math.round(state.valence_score * 10) / 10;
             
-            // 左边(0%) = 差(红), 右边(100%) = 好(绿)
-            document.getElementById('recovery-cursor').style.left = `${valencePercent}%`;
+            if (recoveryChartNew) {
+                recoveryChartNew.setOption({
+                    series: [{ data: [{ value: valencePercent }] }]
+                });
+            }
         } else {
             document.getElementById('recovery-value').textContent = '--';
         }

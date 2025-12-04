@@ -10,7 +10,7 @@ from hall import hall
 import statistics
 import os
 from data_recorder import DataRecorder
-
+	
 class dot():
     def __init__(self, data_source='both'):
         self.ble = BLE(device_name="demo6_2")
@@ -54,7 +54,7 @@ class dot():
         while 1:
             if len(self.fsm.radar.heart_rate) > 0:
                 x = len(self.fsm.radar.heart_rate)
-                time.sleep(5)
+                time.sleep(10)
                 if len(self.fsm.radar.heart_rate) <= x:
                     self.is_here = False
                     print('nobody')
@@ -126,8 +126,8 @@ class dot():
         time.sleep(1)
         self.ble.spike_shake_sync(1)
         # self.ble.freq_light_sync(5)
-        if self.music('breath.WAV'):
-            print("breath guide finished")
+        self.music('breath3.WAV', max_duration=180, loops=5)
+        print("breath guide finished")
         self.ble.mode_sync(3)
         time.sleep(0.5)
         self.ble.spike_shake_sync(-1)
@@ -141,24 +141,36 @@ class dot():
         self.ble.jump_sync(0)#关跳动
         time.sleep(0.5)
 
-    def music(self, sound_file):
-        """播放音频文件并等待播放完成"""
-        pygame.mixer.music.load(sound_file)
-        pygame.mixer.music.play()
+    def music(self, sound_file, max_duration=None, loops=0):
+        """播放音频文件并等待播放完成
         
-        # 等待音频播放完成，同时检查is_here状态
+        Args:
+            sound_file: 音频文件路径
+            max_duration: 最大播放时长（秒），None表示播放完整音频
+            loops: 循环播放次数，0表示播放1次，1表示播放2次（原始+重复1次），以此类推
+        """
+        pygame.mixer.music.load(sound_file)
+        pygame.mixer.music.play(loops=loops)
+        
+        start_time = time.time()
+        # 等待音频播放完成，同时检查is_here状态和播放时长
         while pygame.mixer.music.get_busy():
-            if not self.is_here:
-                print("User left, stopping music")
-                pygame.mixer.music.stop()
-            elif self.is_levitating:
+            if self.is_levitating:
                 print("dot put on the base, stopping music")
                 pygame.mixer.music.stop()
+                break
+            elif max_duration and (time.time() - start_time >= max_duration):
+                print(f"Reached max duration {max_duration}s, stopping music")
+                pygame.mixer.music.stop()
+                break
             time.sleep(0.1)
 
     def wait_to_accumulate(self,):
         self.ble.mode_sync(6)
-        time.sleep(60)
+        self.le = False
+        self.is_levitating = False
+        self.music('breath.WAV', max_duration=60)
+        self.le = True
         self.ble.mode_sync(3)
         
     def main(self,):
@@ -166,31 +178,30 @@ class dot():
         self.wait_to_accumulate()
         while 1:
             self.waiting_to_start()
-            
             if self.is_here:
                 start = time.time()
                 while self.is_here:
                     self.ble.color_sync(0,0,255)
                     if not self.is_levitating:
-                        time.sleep(10)
-                        if self.fsm.ppg_device.heartrate == 0:
-                            self.ble.mode_sync(2)
-                            print('usr is not touch the ppg')
-                            while not self.is_levitating:
-                                if self.ble.gyroscope[-1] == 2:
-                                    self.mindset_wander()
-                                    self.stop_interaction()
-                                    break
-                                elif self.ble.gyroscope[-1] == 1:
-                                    self.Stress_relief()
-                                    self.stop_interaction()
-                                    break
-                                elif self.ble.gyroscope[-1] == 0:
-                                    time.sleep(1)
-                        else :
-                            print('usr take the dot')#只保留疲劳模式
-                            self.fatigue_breath_guide()
-                            break
+                        # time.sleep(10)
+                        # if self.fsm.ppg_device.heartrate == 0:
+                        #     self.ble.mode_sync(2)
+                        #     print('usr is not touch the ppg')
+                        #     while not self.is_levitating:
+                        #         if self.ble.gyroscope[-1] == 2:
+                        #             self.mindset_wander()
+                        #             self.stop_interaction()
+                        #             break
+                        #         elif self.ble.gyroscope[-1] == 1:
+                        #             self.Stress_relief()
+                        #             self.stop_interaction()
+                        #             break
+                        #         elif self.ble.gyroscope[-1] == 0:
+                        #             time.sleep(1)
+                        # else :
+                        print('usr take the dot')#只保留疲劳模式
+                        self.fatigue_breath_guide()
+                        break
                     # elif (self.fsm.stress_assessment['details']['sdnn']['deviation'] > 10 or \
                     #             self.fsm.stress_assessment['details']['sdnn']['deviation'] < -10 or \
                     #             self.fsm.stress_assessment['details']['lf_hf_ratio']['deviation'] > 10 or \

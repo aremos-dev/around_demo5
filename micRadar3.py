@@ -255,7 +255,7 @@ class MicRadar:
         return True
 
 if __name__ == "__main__":
-    radar = MicRadar(port = '/dev/ttyS5') 
+    radar = MicRadar(port = '/dev/ttyS3') 
     # radar = MicRadar(port = 'COM14') 
     radar.connect()
     radar.start_continuous_reading()

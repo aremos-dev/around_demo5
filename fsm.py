@@ -70,7 +70,7 @@ class FSM():
         
         # 根据数据源初始化相应的设备
         if data_source in ['radar', 'both']:
-            self.radar = MicRadar(port ='/dev/ttyS5',window_size=20)
+            self.radar = MicRadar(port ='/dev/ttyS3',window_size=20)
         else:
             self.radar = None
             

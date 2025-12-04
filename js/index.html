@@ -123,15 +123,13 @@
                     <div id="tooltip-stress" class="tooltip-box">
                         <p><strong>压力指数 (SDNN)</strong></p>
                         <p>反映自主神经系统的总体活性。数值越高代表适应能力越强。</p>
+                        <p style="font-size: 10px; color: #888; margin-top: 4px;">正常范围: > 50 ms</p>
                         <div class="tooltip-arrow"></div>
                     </div>
 
-                    <div class="gauge-container">
-                        <div class="linear-gauge-bg gradient-stress"></div>
-                        <div id="stress-cursor" class="gauge-cursor" style="left: 50%;"></div>
-                    </div>
+                    <div id="stress-chart-new" class="gauge-chart-box"></div>
                     
-                    <div class="value-display">
+                    <div class="value-display overlay">
                         <span id="stress-level-value" class="big-num">--</span>
                         <span class="unit">压力指数 (SDNN)</span>
                     </div>
@@ -149,15 +147,13 @@
                      <div id="tooltip-recovery" class="tooltip-box">
                         <p><strong>压力调节 (Valence)</strong></p>
                         <p>代表身体从压力事件中恢复至平静状态的能力。</p>
+                        <p style="font-size: 10px; color: #888; margin-top: 4px;">正常范围: > -1.0</p>
                         <div class="tooltip-arrow"></div>
                     </div>
 
-                    <div class="gauge-container">
-                        <div class="linear-gauge-bg gradient-recovery"></div>
-                        <div id="recovery-cursor" class="gauge-cursor" style="left: 50%;"></div>
-                    </div>
+                    <div id="recovery-chart-new" class="gauge-chart-box"></div>
 
-                    <div class="value-display">
+                    <div class="value-display overlay">
                         <span id="recovery-value" class="big-num">--</span>
                         <span class="unit">情绪效价 (Valence)</span>
                     </div>
@@ -171,10 +167,10 @@
                         </div>
                         <button class="info-btn" data-target="tooltip-balance">i</button>
                     </div>
-
                      <div id="tooltip-balance" class="tooltip-box">
                         <p><strong>LF/HF Ratio</strong></p>
                         <p>交感神经与副交感神经的平衡比率。</p>
+                        <p style="font-size: 10px; color: #888; margin-top: 4px;">正常范围: 0.5 - 2.0</p>
                         <div class="tooltip-arrow"></div>
                     </div>
 
@@ -198,6 +194,7 @@
                     <div id="tooltip-activity" class="tooltip-box">
                         <p><strong>觉醒度 (Arousal)</strong></p>
                         <p>当前的生理唤醒水平。</p>
+                        <p style="font-size: 10px; color: #888; margin-top: 4px;">正常范围: -1.0 - 1.0</p>
                         <div class="tooltip-arrow"></div>
                     </div>
 
