@@ -152,11 +152,11 @@ class FSM():
         t_state = threading.Thread(target=self.state_monitor, daemon=True)
         t_state.start()
 
-        # emotion_recorder = threading.Thread(
-        #     target=self.emotion_monitor,
-        #     daemon=True,
-        # )
-        # emotion_recorder.start()
+        emotion_recorder = threading.Thread(
+            target=self.emotion_monitor,
+            daemon=True,
+        )
+        emotion_recorder.start()
         
         print("[INFO] 所有线程已启动，FSM运行中...")
 

@@ -143,13 +143,13 @@ class DataVisualizer:
                 # 添加 lf_hf 作为 lf_hf_ratio 的别名，方便前端访问
                 payload['lf_hf'] = payload.get('lf_hf_ratio', [])
                 # 添加radar实例的情绪评分数据（通过fsm_instance访问）
-                if hasattr(self, 'fsm_instance') and self.fsm_instance and self.fsm_instance.radar:
-                    payload['arousal_score'] = self.fsm_instance.radar.arousal
-                    payload['valence_score'] = self.fsm_instance.radar.valence
+                if hasattr(self, 'fsm_instance') and self.fsm_instance:
+                    payload['arousal_score'] = self.fsm_instance.arousal_score
+                    payload['valence_score'] = self.fsm_instance.valence_score
                     
                     # 计算情绪状态（二分类：arousal和valence都只有0或1）
-                    arousal = self.fsm_instance.radar.arousal
-                    valence = self.fsm_instance.radar.valence
+                    arousal = self.fsm_instance.arousal_score
+                    valence = self.fsm_instance.valence_score
                     
                     if arousal is not None and valence is not None:
                         # 根据2x2象限判断情绪状态
