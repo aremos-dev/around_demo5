@@ -20,17 +20,18 @@ class HRVcalculate:
             heart_mat = np.array(hr_list, dtype=float).reshape(1, -1)
 
             # 重复3次
-            hr_mat = np.tile(heart_mat, 3)
+            # hr_mat = np.tile(heart_mat, 3)
 
             # 计算 RR 间期矩阵
-            self.rri_mat = 60000.0 / hr_mat
+            self.rri_mat = 60000.0 / heart_mat
 
             # 计算均值和标准差
             hr_mean = np.mean(hr_list)
             rri_mean = np.mean(self.rri_mat)
-            self.SDNN = np.std(self.rri_mat)
+            sdnn = np.std(self.rri_mat)
+            rmssd = np.sqrt(np.mean(np.diff(self.rri_mat)**2))
 
-            return hr_mat, self.rri_mat, hr_mean, self.SDNN
+            return  rmssd, sdnn
         else:
             return None
 

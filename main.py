@@ -13,7 +13,7 @@ from data_recorder import DataRecorder
 	
 class dot():
     def __init__(self, data_source='both'):
-        self.ble = BLE(device_name="demo6_2")
+        self.ble = BLE(device_name="demo6_3")
         self.fsm = FSM(data_source=data_source, enable_visualization=True, viz_port=5000, ble_instance=self.ble)
         self.recorder = DataRecorder(self.fsm)
         self.is_here = False
