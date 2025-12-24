@@ -8,7 +8,7 @@ import dbus.service
  
 import array
 try:
-  from gi.repository import GObject
+  from gi.repository import GObject,GLib
 except ImportError:
   import gobject as GObject
 import sys
@@ -544,9 +544,16 @@ def find_adapter(bus):
  
 def main():
     global mainloop
+
+    adapter = None
+    print("Searching for Bluetooth Adapter...")
  
     # Restart bluetooth service
-    os.system('sudo systemctl restart bluetooth')
+    os.system('sudo rfkill unblock bluetooth')
+    os.system('sudo bluetoothctl power off')
+    time.sleep(1) # 给硬件一点反应时间
+    os.system('sudo bluetoothctl power on')
+
 
     dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
  
@@ -566,7 +573,7 @@ def main():
  
     app = Application(bus)
  
-    mainloop = GObject.MainLoop()
+    mainloop = GLib.MainLoop()
  
     print('Registering GATT application...')
  
