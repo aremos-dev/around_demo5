@@ -26,6 +26,7 @@ class MicRadar:
         self.hrv_thread = None
 
         self.SDNN = None
+        self.rmssd = None
         self.LF = None
         self.HF = None
         self.LF_HF_ratio = None
@@ -71,6 +72,11 @@ class MicRadar:
         breath_cmd = b'\x53\x59\x81\x00\x00\x01\x01\x2F\x54\x43'
         body_cmd   = b'\x53\x59\x80\x00\x00\x01\x01\x2E\x54\x43' 
         real_time  = b'\x53\x59\x84\x0F\x00\x01\x00\x40\x54\x43'
+        heart_wave = b'\x53\x59\x85\x0A\x00\x01\x01\x3D\x54\x43'
+
+        self.ser.write(heart_wave)
+        if not self.wait_for_ack(heart_wave, timeout=3):
+            print("心率波形命令确认失败")
         
         # 发送心率命令并等待确认
         self.ser.write(heart_cmd)
@@ -152,26 +158,24 @@ class MicRadar:
             if (ctrl, cmd) == (0x85, 0x02):
                 # 心率：payload[0] 单字节
                 hr = payload[0]
-                if self.preprocess_data(hr=hr):
-                    if hr != 0:
-                        self.heart_rate.append(hr)
-                        print(f"HR_Rad: {hr} BPM")
+                
+                if hr != 0:
+                    self.heart_rate.append(hr)
+                    self._last_hr_time = time.time()  # track latest valid HR for presence detection
+                    print(f"HR_Rad: {hr} BPM")
             # elif (ctrl, cmd) == (0x85, 0x05):
             #     # 心率波形：payload[5] 五个字节
             #     hr_wave = list(payload[:5])
-            #     self.heart_rate.append(hr_wave)
             #     print(f"心率波形：{hr_wave} ")
             elif (ctrl, cmd) == (0x81, 0x02):
                 # 呼吸率：payload[0] 单字节
                 br = payload[0]
-                if self.preprocess_data(br=br):
-                    self.breath_rate.append(br)
-                    print(f"BR_Rad：{br} RPM")
+                self.breath_rate.append(br)
+                print(f"BR_Rad：{br} RPM")
             elif (ctrl, cmd) == (0x80, 0x03):
                 # 体动参数：payload[0] 单字节
                 motion = payload[0]
-                if self.preprocess_data(motion=motion):
-                    self.motion_para.append(motion)
+                self.motion_para.append(motion)
                     # print(f"Motion：{motion}")
 
             # 丢弃已处理帧
@@ -190,9 +194,9 @@ class MicRadar:
             while self.is_reading:
                 time_result = self.hrv_calculator.compute_time()
                 if time_result:
-                    _, _, hr_mean, SDNN = time_result
+                    rmssd, SDNN = time_result
                     self.SDNN = SDNN
-                    self.hr_mean = hr_mean
+                    self.rmssd = rmssd
                     # print(f"meanHR_Rad: {hr_mean:.2f} BPM, SDNN: {SDNN:.2f} ms")
                 
                 freq_result = self.hrv_calculator.compute_freq()

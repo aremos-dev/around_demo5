@@ -22,6 +22,14 @@ class hall():
             print(f"Error connecting to port {self.port}: {e}")
             self.ser = None
 
+    def write_string(self, data, newline="\n"):
+        payload = data + "\n"
+        written = self.ser.write(payload.encode("utf-8"))
+        self.ser.flush()
+        # print(f"Wrote {written} bytes to {self.port}: {repr(payload)}")
+
+
+
     def read_line(self):
         # Check if the serial connection is active
         if self.ser and self.ser.is_open:
@@ -30,6 +38,7 @@ class hall():
             
             # Check if we received any data
             if line_bytes:
+                # print(line_bytes)
                 line_str = line_bytes.decode('utf-8').strip()
                 
                 # Convert the cleaned string to an integer
@@ -62,12 +71,13 @@ class hall():
         print("Stopped reading and closed serial port.")
 
 if __name__ == "__main__":
-    hall_sensor = hall()
+    hall_sensor = hall('/dev/ttyS7')
     hall_sensor.connect()
     
     # Start reading only if connection was successful
     if hall_sensor.ser:
         hall_sensor.start_continuous_reading()
+        hall_sensor.write_string('platform_flag*0')
         
         # Keep the main thread alive to see the output
         # Stop after 10 seconds for this example
