@@ -1,0 +1,38 @@
+services:
+  my-device:
+    # 1. 镜像构建上下文 (当前目录)
+    build: .
+    image: around_demo:v5
+    container_name: around_demo5
+    
+    # 2. 开机自启 (关键！)
+    restart: always
+    
+    # 3. 网络模式 (解决 mDNS 和 IP 问题)
+    # 使用 host 模式，容器和宿主机共用 IP
+    network_mode: "host"
+    
+    # 4. 特权模式 (解决 GPIO/USB/NPU 权限问题)
+    privileged: true
+    
+    # 5. 挂载目录 (方便调试和改配置)
+    # 格式：宿主机路径:容器内路径
+    volumes:
+      # 把当前目录映射到容器的 /app 目录
+      - ./:/app
+      # 把宿主机的 config 文件夹挂进去，
+      # 以后改配置直接在板子上改 config/settings.json，重启容器就生效
+      - ./config:/app/config
+      # 把日志映射出来
+      - ./logs:/app/logs
+      # 解决时间同步问题
+      - /etc/localtime:/etc/localtime:ro
+      # 【蓝牙关键】挂载宿主机的 D-Bus socket，让容器可以访问系统总线
+      - /var/run/dbus:/var/run/dbus:ro
+      # 【蓝牙关键】挂载蓝牙设备和配置
+      - /var/lib/bluetooth:/var/lib/bluetooth
+      - /sys/class/bluetooth:/sys/class/bluetooth:ro
+    
+    # 6. 环境变量
+    environment:
+      - DBUS_SYSTEM_BUS_ADDRESS=unix:path=/var/run/dbus/system_bus_socket

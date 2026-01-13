@@ -1,5 +1,8 @@
 # .dockerignore 内容
 __pycache__
-venv/
+*.pyc
 .git
 .idea
+.vscode
+docker-compose.yml
+Dockerfile

@@ -4,21 +4,87 @@ from collections import deque
 from bleak import BleakScanner, BleakClient
 import time
 import subprocess
+import os
+
+def check_dbus_available():
+    """检查 D-Bus 是否可用"""
+    dbus_paths = ['/var/run/dbus/system_bus_socket', '/run/dbus/system_bus_socket']
+    for path in dbus_paths:
+        if os.path.exists(path):
+            return True
+    return False
+
+def wait_for_bluetooth_ready(max_retries=30):
+    """等待蓝牙服务完全就绪"""
+    if not check_dbus_available():
+        return False
+    
+    for i in range(max_retries):
+        try:
+            result = subprocess.run(
+                ["bluetoothctl", "show"],
+                timeout=5,
+                capture_output=True,
+                text=True
+            )
+            if "Powered: yes" in result.stdout:
+                print("蓝牙服务已就绪")
+                return True
+            print(f"等待蓝牙服务就绪... ({i+1}/{max_retries})")
+            time.sleep(2)
+        except Exception as e:
+            print(f"检查蓝牙状态时出错: {e}")
+            time.sleep(2)
+    
+    return False
 
 def reset_bluetooth():
     """使用 bluetoothctl 重置蓝牙适配器"""
+    # 先检查 D-Bus 是否可用，避免因 D-Bus 不可用导致崩溃和 core dump
+    if not check_dbus_available():
+        print("警告: D-Bus socket 不可用，跳过蓝牙重置。")
+        print("如果在 Docker 中运行，请确保挂载了 /var/run/dbus")
+        return
+    
+    # 先等待蓝牙服务就绪，避免 "Operation already in progress" 错误
+    print("等待蓝牙服务完全就绪...")
+    wait_for_bluetooth_ready(max_retries=15)
+    
     try:
         print("重置蓝牙适配器...")
-        # 关闭蓝牙
-        subprocess.run(["bluetoothctl", "power", "off"], timeout=5, check=True)
-        time.sleep(1)
+        # 关闭蓝牙（使用 stderr 重定向避免错误输出）
+        result = subprocess.run(
+            ["bluetoothctl", "power", "off"], 
+            timeout=10, 
+            capture_output=True,
+            text=True
+        )
+        if result.returncode != 0:
+            print(f"关闭蓝牙警告: {result.stderr.strip()}")
+        
+        time.sleep(2)
+        
         # 开启蓝牙
-        subprocess.run(["bluetoothctl", "power", "on"], timeout=5, check=True)
-        time.sleep(2) # 等待蓝牙适配器准备就绪
-        print("蓝牙适配器已重置。")
-    except (subprocess.TimeoutExpired, subprocess.CalledProcessError, FileNotFoundError) as e:
+        result = subprocess.run(
+            ["bluetoothctl", "power", "on"], 
+            timeout=10, 
+            capture_output=True,
+            text=True
+        )
+        if result.returncode != 0:
+            print(f"开启蓝牙警告: {result.stderr.strip()}")
+        else:
+            print("蓝牙适配器已重置。")
+        
+        time.sleep(3)  # 等待蓝牙适配器完全准备就绪
+        
+    except subprocess.TimeoutExpired:
+        print("重置蓝牙超时，继续运行...")
+    except FileNotFoundError:
+        print("bluetoothctl 未安装，跳过蓝牙重置。")
+    except Exception as e:
         print(f"重置蓝牙时出错: {e}")
-        print("请确保 'bluetoothctl' 已安装并且有权限运行。")
+        print("继续运行...")
 
 VOLTAGE_SOC_TABLE = [
     (4.20, 100.0),
@@ -122,13 +188,13 @@ class BLE():
                     self.blood_oxygen.append(valid_data[1])
                     self.sdnn.append(valid_data[2])
                     self.rri.extend(valid_data[3:6])
-                    self.voltage = self.calculate_percentage_lookup(valid_data[6] / 10)
-                    self.gyroscope.append(valid_data[7])  # 低4位为shake
+                    # self.voltage = self.calculate_percentage_lookup(valid_data[6] / 10)
+                    self.gyroscope.append(valid_data[6])  # 低4位为shake
                     # self.touch.append((valid_data[7]) & 0x0F)  # 高4位为touch
 
                     self.data_valid = True
                     print(f"收到数据帧: HR={valid_data[0]}, SpO2={valid_data[1]}, SDNN={valid_data[2]}, "\
-                          f"RRI={valid_data[3:6]}, V={valid_data[6]},gyro={valid_data[7]}")
+                          f"RRI={valid_data[3:6]},gyro={valid_data[6]}")
 
                 # 从缓冲区移除已处理的帧
                 self.receive_buffer = self.receive_buffer[self.frame_size:]
@@ -161,12 +227,25 @@ class BLE():
                     return True # 连接成功，退出connect方法
 
             except Exception as e:
+                error_str = str(e)
                 print(f"连接过程中发生错误: {e}")
+                
+                # 如果是 "Operation already in progress" 错误，等待更长时间让蓝牙服务就绪
+                if "InProgress" in error_str or "already in progress" in error_str.lower():
+                    print("检测到蓝牙操作正在进行中，等待蓝牙服务完成...")
+                    await asyncio.sleep(10)  # 等待更长时间
+                    reset_bluetooth()  # 重置蓝牙适配器
+                    await asyncio.sleep(3)
+                    continue
             
             # 如果代码执行到这里，说明发生了错误或连接未成功
             print("连接失败，将在5秒后重试...")
-            if self.client and await self.client.is_connected():
-                await self.client.disconnect()
+            if self.client:
+                try:
+                    if self.client.is_connected:
+                        await self.client.disconnect()
+                except Exception:
+                    pass
             await asyncio.sleep(5)
         
         return False # 如果 self.is_running 变为 False，则退出循环并返回
@@ -222,11 +301,16 @@ class BLE():
             print("已发送 p=0 指令以停止数据采集。")
     
     def stop_reading_sync(self,):
-        if self.loop and self.loop.is_running():
-            future = asyncio.run_coroutine_threadsafe(self.stop_reading(), self.loop)
-            future.result(timeout=5.0)
-        else:
-            asyncio.run(self.stop_reading(vm))
+        try:
+            if self.loop and self.loop.is_running():
+                future = asyncio.run_coroutine_threadsafe(self.stop_reading(), self.loop)
+                future.result(timeout=5.0)
+            else:
+                asyncio.run(self.stop_reading())
+        except TimeoutError:
+            print("[WARNING] stop_reading_sync 超时")
+        except Exception as e:
+            print(f"[WARNING] stop_reading_sync 失败: {e}")
 
     async def disconnect(self):
         """断开设备连接"""
@@ -341,11 +425,16 @@ class BLE():
     
     def color_sync(self, r, g, b):
         """同步版本的color方法"""
-        if self.loop and self.loop.is_running():
-            future = asyncio.run_coroutine_threadsafe(self.color(r, g, b), self.loop)
-            future.result(timeout=5.0)
-        else:
-            asyncio.run(self.color(r, g, b))
+        try:
+            if self.loop and self.loop.is_running():
+                future = asyncio.run_coroutine_threadsafe(self.color(r, g, b), self.loop)
+                future.result(timeout=5.0)
+            else:
+                asyncio.run(self.color(r, g, b))
+        except TimeoutError:
+            print(f"[WARNING] color_sync 超时: RGB({r},{g},{b})")
+        except Exception as e:
+            print(f"[WARNING] color_sync 失败: {e}")
         
     async def jump(self,a):
         if self.client and self.client.is_connected:
@@ -355,11 +444,16 @@ class BLE():
     
     def jump_sync(self, a):
         """同步版本的jump方法"""
-        if self.loop and self.loop.is_running():
-            future = asyncio.run_coroutine_threadsafe(self.jump(a), self.loop)
-            future.result(timeout=5.0)
-        else:
-            asyncio.run(self.jump(a))
+        try:
+            if self.loop and self.loop.is_running():
+                future = asyncio.run_coroutine_threadsafe(self.jump(a), self.loop)
+                future.result(timeout=5.0)
+            else:
+                asyncio.run(self.jump(a))
+        except TimeoutError:
+            print(f"[WARNING] jump_sync 超时: {a}")
+        except Exception as e:
+            print(f"[WARNING] jump_sync 失败: {e}")
 
     async def bright(self, brightness):
         """
@@ -375,11 +469,16 @@ class BLE():
     
     def bright_sync(self, brightness):
         """同步版本的bright方法"""
-        if self.loop and self.loop.is_running():
-            future = asyncio.run_coroutine_threadsafe(self.bright(brightness), self.loop)
-            future.result(timeout=5.0)
-        else:
-            asyncio.run(self.bright(brightness))
+        try:
+            if self.loop and self.loop.is_running():
+                future = asyncio.run_coroutine_threadsafe(self.bright(brightness), self.loop)
+                future.result(timeout=5.0)
+            else:
+                asyncio.run(self.bright(brightness))
+        except TimeoutError:
+            print(f"[WARNING] bright_sync 超时: {brightness}")
+        except Exception as e:
+            print(f"[WARNING] bright_sync 失败: {e}")
     
     async def mode(self, mode):
         """
@@ -395,13 +494,18 @@ class BLE():
 
     def mode_sync(self, mode):
         """同步版本的mode方法，可在非异步环境中调用"""
-        if self.loop and self.loop.is_running():
-            # 如果事件循环在运行（即在后台线程中），在该循环中执行
-            future = asyncio.run_coroutine_threadsafe(self.mode(mode), self.loop)
-            future.result(timeout=5.0)  # 等待执行完成，最多5秒
-        else:
-            # 如果没有运行的事件循环，创建一个新的
-            asyncio.run(self.mode(mode))
+        try:
+            if self.loop and self.loop.is_running():
+                # 如果事件循环在运行（即在后台线程中），在该循环中执行
+                future = asyncio.run_coroutine_threadsafe(self.mode(mode), self.loop)
+                future.result(timeout=5.0)  # 等待执行完成，最多5秒
+            else:
+                # 如果没有运行的事件循环，创建一个新的
+                asyncio.run(self.mode(mode))
+        except TimeoutError:
+            print(f"[WARNING] mode_sync 超时: {mode}")
+        except Exception as e:
+            print(f"[WARNING] mode_sync 失败: {e}")
     
     async def shake(self, v=1):
         """
@@ -417,37 +521,42 @@ class BLE():
     
     def shake_sync(self, v=1):
         """同步版本的shake方法"""
-        if self.loop and self.loop.is_running():
-            future = asyncio.run_coroutine_threadsafe(self.shake(v), self.loop)
-            future.result(timeout=5.0)
-        else:
-            asyncio.run(self.shake(v))
-    
-    async def spike_shake(self, vm=1):
+        try:
+            if self.loop and self.loop.is_running():
+                future = asyncio.run_coroutine_threadsafe(self.shake(v), self.loop)
+                future.result(timeout=5.0)
+            else:
+                asyncio.run(self.shake(v))
+        except TimeoutError:
+            print(f"[WARNING] shake_sync 超时: {v}")
+        except Exception as e:
+            print(f"[WARNING] shake_sync 失败: {e}")
+
+    async def message(self, a):
         """
-        脉冲震动控制
+        震动控制
         
         Args:
-            vm: 1表示开始, -1表示停止
+            v: 震动参数，默认为1
         """
         if self.client and self.client.is_connected:
-            if vm == 1:
-                command = b'vm=1\n'
-                print("已发送脉冲震动开始指令")
-            elif vm == -1:
-                command = b'vm=-1\n'
-                print("已发送脉冲震动停止指令")
-            else:
-                return
+            command = a.encode('ascii')
             await self.client.write_gatt_char(self.write_characteristic_uuid, command)
+            print(f"已发送指令: {a}")
     
-    def spike_shake_sync(self, vm=1):
-        """同步版本的spike_shake方法"""
-        if self.loop and self.loop.is_running():
-            future = asyncio.run_coroutine_threadsafe(self.spike_shake(vm), self.loop)
-            future.result(timeout=5.0)
-        else:
-            asyncio.run(self.spike_shake(vm))
+    def message_sync(self, a):
+        """同步版本的shake方法"""
+        try:
+            if self.loop and self.loop.is_running():
+                future = asyncio.run_coroutine_threadsafe(self.message(a), self.loop)
+                future.result(timeout=5.0)
+            else:
+                asyncio.run(self.message(a))
+        except TimeoutError:
+            print(f"[WARNING] shake_sync 超时: {a}")
+        except Exception as e:
+            print(f"[WARNING] shake_sync 失败: {e}")
+    
     
     async def ppg(self, p=0):
         """
@@ -481,26 +590,29 @@ class BLE():
 
     def freq_light_sync(self, f=5):
         """同步版本的freq_light方法"""
-        if self.loop and self.loop.is_running():
-            future = asyncio.run_coroutine_threadsafe(self.freq_light(f), self.loop)
-            future.result(timeout=5.0)
-        else:
-            asyncio.run(self.freq_light(f))
+        try:
+            if self.loop and self.loop.is_running():
+                future = asyncio.run_coroutine_threadsafe(self.freq_light(f), self.loop)
+                future.result(timeout=5.0)
+            else:
+                asyncio.run(self.freq_light(f))
+        except TimeoutError:
+            print(f"[WARNING] freq_light_sync 超时: {f}")
+        except Exception as e:
+            print(f"[WARNING] freq_light_sync 失败: {e}")
 
 
 if __name__ == "__main__":
      # 在初始化时重置蓝牙
-    ble = BLE(device_name="demo6_2", max_buffer_size=120)
+    ble = BLE(device_name="demo6", max_buffer_size=120)
     # 直接开始连续读取，connect 会在后台线程中自动执行
     ble.start_continuous_reading()
-    time.sleep(5)
-    ble.spike_shake_sync(1)
-    time.sleep(5)
-    ble.spike_shake_sync(-1)
+    time.sleep(0.5)
+    ble.shake_sync(0)
     time.sleep(0.5)
     ble.mode_sync(3)
     time.sleep(1)
-    # ble.color_sync(0,0,255)
+    ble.color_sync(0,0,0)
     time.sleep(1)
     ble.stop_reading_sync()
     

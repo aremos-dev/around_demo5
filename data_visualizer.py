@@ -1,8 +1,9 @@
 import io
 import time
 import threading
+import os
 from collections import deque
-from flask import Flask, Response, render_template, jsonify
+from flask import Flask, Response, render_template, jsonify, send_from_directory
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
 import matplotlib
@@ -15,6 +16,16 @@ matplotlib.use('Agg')
 matplotlib.rcParams['font.family'] = 'sans-serif'
 matplotlib.rcParams['font.sans-serif'] = ['DejaVu Sans', 'Arial Unicode MS', 'Noto Sans CJK SC']
 matplotlib.rcParams['axes.unicode_minus'] = False  # ensure minus sign displays correctly
+
+# 前端目录配置
+# 优先使用 around-front-master/dist（新的React前端构建输出）
+# 如果不存在，回退到 js 目录（旧的原生JS前端）
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+NEW_FRONTEND_DIR = os.path.join(BASE_DIR, 'around-front-master', 'dist')
+OLD_FRONTEND_DIR = os.path.join(BASE_DIR, 'js')
+
+# 检查使用哪个前端
+USE_NEW_FRONTEND = os.path.exists(NEW_FRONTEND_DIR) and os.path.exists(os.path.join(NEW_FRONTEND_DIR, 'index.html'))
 
 
 class DataVisualizer:
@@ -56,10 +67,21 @@ class DataVisualizer:
         
         self.start_time = time.time()
         
-        # 创建Flask应用，指定模板和静态文件夹
-        self.app = Flask(__name__, 
-                        template_folder='js',  # 使用js文件夹作为模板文件夹
-                        static_folder='js')  # js文件夹同时作为静态文件夹
+        # 创建Flask应用，根据前端类型配置目录
+        if USE_NEW_FRONTEND:
+            # 新的React前端 - 使用 around-front-master/dist 目录
+            print(f"[INFO] 使用新的React前端: {NEW_FRONTEND_DIR}")
+            self.app = Flask(__name__, 
+                            static_folder=NEW_FRONTEND_DIR,
+                            static_url_path='')
+            self.use_new_frontend = True
+        else:
+            # 旧的原生JS前端 - 使用 js 目录
+            print(f"[INFO] 使用旧的JS前端: {OLD_FRONTEND_DIR}")
+            self.app = Flask(__name__, 
+                            template_folder=OLD_FRONTEND_DIR,
+                            static_folder=OLD_FRONTEND_DIR)
+            self.use_new_frontend = False
         self._setup_routes()
         
         # Flask应用线程
@@ -132,7 +154,23 @@ class DataVisualizer:
         
         @self.app.route('/')
         def index():
-            return render_template('index.html')
+            if self.use_new_frontend:
+                # React SPA - 直接发送 index.html
+                return send_from_directory(NEW_FRONTEND_DIR, 'index.html')
+            else:
+                # 旧的模板渲染
+                return render_template('index.html')
+        
+        # React SPA 路由支持 - 所有非 API、非静态资源的路由都返回 index.html
+        if self.use_new_frontend:
+            @self.app.route('/<path:path>')
+            def serve_spa(path):
+                # 如果请求的是静态文件，直接返回
+                full_path = os.path.join(NEW_FRONTEND_DIR, path)
+                if os.path.exists(full_path) and os.path.isfile(full_path):
+                    return send_from_directory(NEW_FRONTEND_DIR, path)
+                # 否则返回 index.html（SPA 路由）
+                return send_from_directory(NEW_FRONTEND_DIR, 'index.html')
 
         @self.app.route('/api/state')
         def api_state():
@@ -143,13 +181,13 @@ class DataVisualizer:
                 # 添加 lf_hf 作为 lf_hf_ratio 的别名，方便前端访问
                 payload['lf_hf'] = payload.get('lf_hf_ratio', [])
                 # 添加radar实例的情绪评分数据（通过fsm_instance访问）
-                if hasattr(self, 'fsm_instance') and self.fsm_instance and self.fsm_instance.radar:
-                    payload['arousal_score'] = self.fsm_instance.radar.arousal
-                    payload['valence_score'] = self.fsm_instance.radar.valence
+                if hasattr(self, 'fsm_instance') and self.fsm_instance:
+                    payload['arousal_score'] = self.fsm_instance.arousal_score
+                    payload['valence_score'] = self.fsm_instance.valence_score
                     
                     # 计算情绪状态（二分类：arousal和valence都只有0或1）
-                    arousal = self.fsm_instance.radar.arousal
-                    valence = self.fsm_instance.radar.valence
+                    arousal = self.fsm_instance.arousal_score
+                    valence = self.fsm_instance.valence_score
                     
                     if arousal is not None and valence is not None:
                         # 根据2x2象限判断情绪状态

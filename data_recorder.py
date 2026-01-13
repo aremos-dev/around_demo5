@@ -154,8 +154,13 @@ class DataRecorder:
             return []
         
         historical_points = []
-        with open(save_path, 'r', encoding='utf-8') as csvfile:
-            reader = csv.DictReader(csvfile)
+        try:
+            with open(save_path, 'r', encoding='utf-8') as csvfile:
+                # 过滤掉NUL字符，防止csv解析错误
+                content = csvfile.read().replace('\x00', '')
+            
+            from io import StringIO
+            reader = csv.DictReader(StringIO(content))
             rows = list(reader)
             
             # 获取最近的num_records条记录（包括当前正在记录的）
@@ -167,6 +172,9 @@ class DataRecorder:
                         valence_val = float(valence)
                         arousal_val = float(arousal)
                         historical_points.append((valence_val, arousal_val))
+        except Exception as e:
+            print(f'[WARNING] Failed to read historical data: {e}')
+            return []
         
         return historical_points
 
