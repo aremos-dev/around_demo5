@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的情绪</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+</head>
+<body>
+
+    <div id="splash-screen" class="splash-screen">
+        <img src="js/logo.png" alt="Logo" class="splash-logo">
+    </div>
+
+    <main class="main-content" id="main-content">
+        <header class="app-header">
+            <img src="js/20251110-104342.png" alt="User Avatar" class="avatar">
+            <h1 id="app-title">我的情绪</h1>
+            <div class="header-buttons">
+                <button id="lang-toggle-btn" class="lang-btn" title="切换语言">
+                    <svg class="icon" viewBox="0 0 1024 1024" width="28" height="28">
+                        <path d="M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64z m0 820c-205.4 0-372-166.6-372-372s166.6-372 372-372 372 166.6 372 372-166.6 372-372 372z" fill="#5C5C66"/>
+                        <path d="M623.5 421.5c-4.9-9.3-18.8-9.3-23.7 0L512 618.9l-87.8-197.4c-4.9-9.3-18.8-9.3-23.7 0l-105 236c-3.3 7.5 0.4 16.3 8.3 19.6 7.9 3.3 16.7-0.4 20-8.3l93.3-210 87.8 197.4c4.9 9.3 18.8 9.3 23.7 0l87.8-197.4 93.3 210c3.3 7.9 12.1 11.6 20 8.3 7.9-3.3 11.6-12.1 8.3-19.6l-105-236z" fill="#5C5C66"/>
+                        <path d="M749.5 349H274.5c-8.3 0-15 6.7-15 15s6.7 15 15 15h475c8.3 0 15-6.7 15-15s-6.7-15-15-15z" fill="#5C5C66"/>
+                    </svg>
+                </button>
+                <button id="open-modal-btn" class="heart-btn">
+                    <svg class="icon" viewBox="0 0 1024 1024" width="28" height="28"><path d="M961.206667 241.68A256.066667 256.066667 0 0 0 512 199.76 256 256 0 0 0 42.666667 341.333333c0 35.96 1.826667 66.606667 10.753333 99.293334 10.06 36.84 28.233333 72.96 57.193333 113.673333 30.993333 43.56 75.62 93.766667 136.44 153.48 63.013333 61.866667 145.153333 135.733333 251.133334 225.806667a21.333333 21.333333 0 0 0 27.626666 0c106-90.073333 188.12-163.94 251.133334-225.806667 60.82-59.713333 105.446667-109.92 136.44-153.48 28.96-40.713333 47.133333-76.833333 57.193333-113.673333 8.926667-32.666667 10.753333-63.333333 10.753333-99.293334a254.433333 254.433333 0 0 0-20.126666-99.653333zM512 889.333333c-194.706667-166.193333-308.073333-277.466667-366.613333-359.766666q-6.433333-9.026667-12-17.566667H234.666667a21.333333 21.333333 0 0 0 15.086666-6.246667l64.4-64.42 114.766667 229.526667A21.333333 21.333333 0 0 0 448 682.666667h1.126667a21.333333 21.333333 0 0 0 18.873333-13.84L578.8 373.333333l106.12 212.24a21.333333 21.333333 0 0 0 34.166667 5.546667L798.166667 512h92.413333q-5.546667 8.54-11.966667 17.566667C820.073333 611.866667 706.706667 723.14 512 889.333333z m402.566667-420H789.333333a21.333333 21.333333 0 0 0-15.086666 6.246667l-64.4 64.42-114.766667-229.54a21.333333 21.333333 0 0 0-39.08 2.046667L445.2 608.033333 339.08 395.793333a21.333333 21.333333 0 0 0-34.166667-5.546666L225.833333 469.333333h-116.4C87.553333 422.593333 85.333333 384.98 85.333333 341.333333c0-117.633333 95.7-213.333333 213.333334-213.333333 83.1 0 159.226667 48.813333 193.946666 124.353333a21.333333 21.333333 0 0 0 38.773334 0C566.106667 176.813333 642.233333 128 725.333333 128c117.633333 0 213.333333 95.7 213.333334 213.333333 0 43.646667-2.22 81.26-24.1 128z" fill="#5C5C66"></path></svg>
+                </button>
+                <button id="open-health-modal-btn" class="health-btn">
+                    <svg class="icon" viewBox="0 0 1024 1024" width="28" height="28"><path d="M981.333333 533.333333c0 247.426667-200.573333 448-448 448s-448-200.573333-448-448 200.573333-448 448-448 448 200.573333 448 448zM533.333333 128c-223.86 0-405.333333 181.473333-405.333333 405.333333s181.473333 405.333333 405.333333 405.333334 405.333333-181.473333 405.333334-405.333334-181.473333-405.333333-405.333334-405.333333z m144.493334 548.34a21.333333 21.333333 0 0 0-0.153334-30.166667L554.666667 524.433333V256a21.333333 21.333333 0 0 0-42.666667 0v277.333333a21.333333 21.333333 0 0 0 6.326667 15.16l129.333333 128a21.333333 21.333333 0 0 0 30.166667-0.153333z" fill="#5C5C66"></path></svg>
+                </button>
+            </div>
+        </header>
+
+        <section class="mood-visual">
+            <div class="mood-aura"></div>
+            <div class="mood-text">
+                <h2>平静</h2>
+                <p id="current-time">--:--, -- --</p>
+            </div>
+            <p class="mood-prompt">深呼吸, 把这一刻收藏起来。</p>
+        </section>
+
+        <section class="mood-calendar">
+            <div class="calendar-header">
+                <button id="prev-month" class="month-nav">&lt;</button>
+                <h3 id="current-month">2024年11月</h3>
+                <button id="next-month" class="month-nav">&gt;</button>
+                <button id="calendar-toggle" class="calendar-toggle">▼</button>
+            </div>
+            <div class="calendar-grid" id="calendar-grid">
+                <span class="weekday">周日</span>
+                <span class="weekday">周一</span>
+                <span class="weekday">周二</span>
+                <span class="weekday">周三</span>
+                <span class="weekday">周四</span>
+                <span class="weekday">周五</span>
+                <span class="weekday">周六</span>
+                </div>
+        </section>
+
+        <section class="daily-timeline">
+            <div class="timeline-header">
+                <h4 id="selected-date-display">选择一个日期</h4>
+                <button id="open-emotion-map-btn" class="emotion-map-btn">
+                    <svg class="icon" viewBox="0 0 1024 1024" width="24" height="24">
+                        <circle cx="512" cy="512" r="400" fill="none" stroke="#5C5C66" stroke-width="40"/>
+                        <circle cx="512" cy="300" r="60" fill="#5C5C66"/>
+                        <circle cx="300" cy="512" r="60" fill="#5C5C66"/>
+                        <circle cx="724" cy="512" r="60" fill="#5C5C66"/>
+                        <circle cx="512" cy="724" r="60" fill="#5C5C66"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="timeline-bar" id="timeline-bar">
+                </div>
+            <div class="timeline-labels">
+                <span>0时</span>
+                <span>6时</span>
+                <span>12时</span>
+                <span>18时</span>
+            </div>
+        </section>
+    </main>
+
+    <div id="data-modal" class="modal-overlay">
+        <div class="modal-content">
+            <button id="close-modal-btn" class="close-btn">&times;</button>
+            
+            <div class="chart-section">
+                <div class="chart-header">
+                    <h3>心率</h3>
+                </div>
+                <div id="modal-hr-chart" class="modal-chart-box"></div>
+            </div>
+            
+            <div class="chart-section">
+                <div class="chart-header">
+                    <h3>呼吸率</h3>
+                </div>
+                <div id="modal-br-chart" class="modal-chart-box"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="health-modal" class="modal-overlay">
+        <div class="modal-content health-modal-content">
+            <button id="close-health-modal-btn" class="close-btn">&times;</button>
+            <h2 class="modal-title">我的健康</h2>
+            
+            <div class="health-grid">
+                <div class="health-card stress-card">
+                    <div class="card-header">
+                        <div class="header-left">
+                            <span class="icon-small">💪</span>
+                            <h3>压力水平</h3>
+                        </div>
+                        <button class="info-btn" data-target="tooltip-stress">i</button>
+                    </div>
+                    
+                    <div id="tooltip-stress" class="tooltip-box">
+                        <p><strong>压力指数 (SDNN)</strong></p>
+                        <p>反映自主神经系统的总体活性。数值越高代表适应能力越强。</p>
+                        <p style="font-size: 10px; color: #888; margin-top: 4px;">正常范围: > 50 ms</p>
+                        <div class="tooltip-arrow"></div>
+                    </div>
+
+                    <div id="stress-chart-new" class="gauge-chart-box"></div>
+                    
+                    <div class="value-display overlay">
+                        <span id="stress-level-value" class="big-num">--</span>
+                        <span class="unit">压力指数 (SDNN)</span>
+                    </div>
+                </div>
+
+                <div class="health-card recovery-card">
+                    <div class="card-header">
+                        <div class="header-left">
+                            <span class="icon-small">🧘</span>
+                            <h3>恢复能力</h3>
+                        </div>
+                        <button class="info-btn" data-target="tooltip-recovery">i</button>
+                    </div>
+
+                     <div id="tooltip-recovery" class="tooltip-box">
+                        <p><strong>压力调节 (Valence)</strong></p>
+                        <p>代表身体从压力事件中恢复至平静状态的能力。</p>
+                        <p style="font-size: 10px; color: #888; margin-top: 4px;">正常范围: > -1.0</p>
+                        <div class="tooltip-arrow"></div>
+                    </div>
+
+                    <div id="recovery-chart-new" class="gauge-chart-box"></div>
+
+                    <div class="value-display overlay">
+                        <span id="recovery-value" class="big-num">--</span>
+                        <span class="unit">情绪效价 (Valence)</span>
+                    </div>
+                </div>
+
+                <div class="health-card balance-card">
+                    <div class="card-header">
+                        <div class="header-left">
+                            <span class="icon-small">⚖️</span>
+                            <h3>自主神经平衡</h3>
+                        </div>
+                        <button class="info-btn" data-target="tooltip-balance">i</button>
+                    </div>
+                     <div id="tooltip-balance" class="tooltip-box">
+                        <p><strong>LF/HF Ratio</strong></p>
+                        <p>交感神经与副交感神经的平衡比率。</p>
+                        <p style="font-size: 10px; color: #888; margin-top: 4px;">正常范围: 0.5 - 2.0</p>
+                        <div class="tooltip-arrow"></div>
+                    </div>
+
+                    <div id="balance-chart-new" class="gauge-chart-box"></div>
+
+                    <div class="value-display overlay">
+                        <span id="balance-value" class="big-num">--</span>
+                        <span class="unit">LF/HF Ratio</span>
+                    </div>
+                </div>
+
+                <div class="health-card activity-card">
+                    <div class="card-header">
+                        <div class="header-left">
+                            <span class="icon-small">⚡</span>
+                            <h3>自主神经活性</h3>
+                        </div>
+                        <button class="info-btn" data-target="tooltip-activity">i</button>
+                    </div>
+
+                    <div id="tooltip-activity" class="tooltip-box">
+                        <p><strong>觉醒度 (Arousal)</strong></p>
+                        <p>当前的生理唤醒水平。</p>
+                        <p style="font-size: 10px; color: #888; margin-top: 4px;">正常范围: -1.0 - 1.0</p>
+                        <div class="tooltip-arrow"></div>
+                    </div>
+
+                    <div id="activity-chart-new" class="gauge-chart-box"></div>
+
+                    <div class="value-display overlay">
+                        <span id="activity-value" class="big-num">--</span>
+                        <span class="unit">觉醒度 (Arousal)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="emotion-map-modal" class="modal-overlay">
+        <div class="modal-content emotion-map-modal-content">
+            <button id="close-emotion-map-btn" class="close-btn">&times;</button>
+            <h2 class="modal-title">我的情绪图谱</h2>
+            
+            <div class="emotion-map-container">
+                <canvas id="emotion-map-canvas"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
