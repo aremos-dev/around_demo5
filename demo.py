@@ -32,13 +32,15 @@ class dot():
             State(name='guiding_mode3', on_enter=['_enter_guiding_mode3'], on_exit=['stop_interaction']),
             State(name='desk_idle', on_enter=['_enter_desk_idle_mode'], on_exit=['stop_interaction']),
             State(name='standby', on_enter=['_enter_standby']),
+            # 444呼吸模式：由前端双击情绪球触发
+            State(name='breathing_444', on_enter=['_enter_breathing_444'], on_exit=['stop_interaction']),
         ]
    
         transitions = [
             {'trigger': 'start', 'source': 'booting', 'dest': 'baseline'},
             {'trigger': 'baseline_done', 'source': 'baseline', 'dest': 'waiting'},
             {'trigger': 'person_detected', 'source': 'waiting', 'dest': 'engaged'},
-            {'trigger': 'lost_person', 'source': ['engaged', 'guiding_fatigue', 'guiding_mode1', 'guiding_mode2', 'guiding_mode3', 'desk_idle'], 'dest': 'waiting'},
+            {'trigger': 'lost_person', 'source': ['engaged', 'guiding_fatigue', 'guiding_mode1', 'guiding_mode2', 'guiding_mode3', 'desk_idle', 'breathing_444'], 'dest': 'waiting'},
             {'trigger': 'need_fatigue', 'source': 'engaged', 'dest': 'guiding_fatigue'},
             {'trigger': 'need_mode1', 'source': ['engaged', 'desk_idle'], 'dest': 'guiding_mode1'},
             {'trigger': 'need_mode2', 'source': ['engaged', 'desk_idle'], 'dest': 'guiding_mode2'},
@@ -46,8 +48,11 @@ class dot():
             {'trigger': 'enter_idle', 'source': ['guiding_mode1', 'guiding_mode2', 'guiding_mode3', 'engaged'], 'dest': 'desk_idle'},
             {'trigger': 'idle_done', 'source': 'desk_idle', 'dest': 'waiting'},
             {'trigger': 'guide_finished', 'source': ['guiding_fatigue', 'guiding_mode1', 'guiding_mode2', 'guiding_mode3'], 'dest': 'waiting'},
-            {'trigger': 'enter_standby', 'source': ['booting', 'baseline', 'waiting', 'engaged', 'guiding_fatigue', 'guiding_mode1', 'guiding_mode2', 'guiding_mode3', 'desk_idle'], 'dest': 'standby'},
+            {'trigger': 'enter_standby', 'source': ['booting', 'baseline', 'waiting', 'engaged', 'guiding_fatigue', 'guiding_mode1', 'guiding_mode2', 'guiding_mode3', 'desk_idle', 'breathing_444'], 'dest': 'standby'},
             {'trigger': 'standby_done', 'source': 'standby', 'dest': 'waiting'},
+            # 444呼吸模式：只能从 engaged 状态进入，完成后返回 engaged
+            {'trigger': 'enter_breathing_444', 'source': 'engaged', 'dest': 'breathing_444'},
+            {'trigger': 'breathing_444_done', 'source': 'breathing_444', 'dest': 'engaged'},
         ]
 
         self.machine = Machine(
@@ -81,6 +86,11 @@ class dot():
         self.fsm.run()
         threading.Thread(target=self.levitation, daemon=True).start()
         threading.Thread(target=self.monitor_here, daemon=True).start()
+        # 设置444呼吸模式命令回调
+        if self.fsm.visualizer:
+            self.fsm.visualizer.special_mode_callback = self._handle_breathing_444_command
+        # 启动444呼吸模式命令监控线程（用于轮询检查）
+        threading.Thread(target=self._monitor_breathing_444_commands, daemon=True).start()
         print("started reading data")
            
     def monitor_here(self,):
@@ -180,18 +190,19 @@ class dot():
 
     def fatigue_breath_guide(self):
         print('start breath guide')
-        # self.ble.color(255,255,0)
-        time.sleep(1)
+        time.sleep(0.2)
+        self.ble.message_sync('s=0')
+        time.sleep(0.5)
         self.ble.mode_sync(1)
-        time.sleep(1)
+        time.sleep(0.5)
         self.ble.shake_sync(4)
-        # self.ble.freq_light_sync(5)
         self.music('breath3.WAV', max_duration=180, loops=5)
         print("breath guide finished")
         self.ble.mode_sync(3)
         time.sleep(0.5)
         self.ble.shake_sync(0)
         time.sleep(0.5)
+        self.ble.message_sync('s=1')
         
         if self.state == 'guiding_fatigue':
             self.guide_finished()
@@ -228,7 +239,7 @@ class dot():
                 print(f"Reached max duration {max_duration}s, stopping music")
                 pygame.mixer.music.stop()
                 break
-            self.ble.message_sync('E=1')
+            # self.ble.message_sync('E=1')
             time.sleep(0.1)
 
     def wait_to_accumulate(self,):
@@ -399,6 +410,51 @@ class dot():
 
     def _enter_guiding_mode3(self, event=None):
         threading.Thread(target=self.mode3, daemon=True).start()
+
+    def _enter_breathing_444(self, event=None):
+        """进入444呼吸模式（由前端双击情绪球触发）"""
+        print('[444呼吸模式] Entering breathing 444 mode from web interface')
+        threading.Thread(target=self._breathing_444_loop, daemon=True).start()
+
+    def _breathing_444_loop(self):
+        """444呼吸模式的主循环"""
+        print('[444呼吸模式] Breathing 444 mode started')
+
+        time.sleep(0.5)
+        # TODO: 在这里添加444呼吸模式的具体行为
+        self.ble.message_sync('m=1')
+        time.sleep(16)
+        
+        # 444呼吸模式完成后，返回 engaged 状态
+        if self.state == 'breathing_444':
+            print('[444呼吸模式] Breathing 444 mode finished, returning to engaged')
+            self.breathing_444_done()
+
+    def _handle_breathing_444_command(self, command):
+        """处理来自前端的444呼吸模式命令"""
+        print(f'[444呼吸模式] Received command: {command}')
+        if command == 'enter_special_mode':
+            # 只有在 engaged 状态才能进入444呼吸模式
+            if self.state == 'engaged':
+                self.enter_breathing_444()
+            else:
+                print(f'[444呼吸模式] Cannot enter breathing 444 mode from state: {self.state}, must be in engaged state')
+
+    def _monitor_breathing_444_commands(self):
+        """轮询检查是否有待处理的444呼吸模式命令"""
+        print('[444呼吸模式] Starting command monitor')
+        while True:
+            try:
+                if self.fsm.visualizer and hasattr(self.fsm.visualizer, 'pending_special_mode_command'):
+                    command = self.fsm.visualizer.pending_special_mode_command
+                    if command:
+                        # 清除待处理命令
+                        self.fsm.visualizer.pending_special_mode_command = None
+                        # 处理命令
+                        self._handle_breathing_444_command(command)
+            except Exception as e:
+                print(f'[444呼吸模式] Error in command monitor: {e}')
+            time.sleep(0.5)
         
     def main(self,):
         self.start_services()

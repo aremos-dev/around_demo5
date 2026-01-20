@@ -38,6 +38,7 @@ npm run dev
 3. 构建生产版本：
 ```bash
 npm run build
+npx vite build上面那个不可以，这个应该可以
 ```
 
 ## 项目结构

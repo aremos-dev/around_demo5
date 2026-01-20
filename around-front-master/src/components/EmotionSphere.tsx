@@ -1,12 +1,14 @@
 import { EmotionType } from '../types'
 import { EMOTION_CONFIG } from '../data/mockData'
+import { sendSpecialModeCommand } from '../api/stateApi'
 
 interface EmotionSphereProps {
   emotion: EmotionType
   timestamp?: string // 时间戳，格式：YYYY-MM-DDTHH:mm:ss
+  onDoubleClick?: () => void // 双击回调
 }
 
-export const EmotionSphere = ({ emotion, timestamp }: EmotionSphereProps) => {
+export const EmotionSphere = ({ emotion, timestamp, onDoubleClick }: EmotionSphereProps) => {
   const config = EMOTION_CONFIG[emotion]
 
   // 格式化时间戳为 "14:38 Nov 6" 格式
@@ -20,8 +22,26 @@ export const EmotionSphere = ({ emotion, timestamp }: EmotionSphereProps) => {
     return `${hours}:${minutes} ${month} ${day}`
   }
 
+  // 处理双击事件
+  const handleDoubleClick = async () => {
+    console.log('EmotionSphere double clicked, sending special mode command...')
+    try {
+      const result = await sendSpecialModeCommand()
+      console.log('Special mode command result:', result)
+      // 调用外部回调（如果有）
+      if (onDoubleClick) {
+        onDoubleClick()
+      }
+    } catch (error) {
+      console.error('Failed to send special mode command:', error)
+    }
+  }
+
   return (
-    <div className="relative w-full h-full flex items-center justify-center">
+    <div 
+      className="relative w-full h-full flex items-center justify-center cursor-pointer"
+      onDoubleClick={handleDoubleClick}
+    >
       {/* 情绪背景图片 - 撑满整个容器 */}
       <img
         src={config.image}

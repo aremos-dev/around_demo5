@@ -3,7 +3,7 @@ import time
 import threading
 import os
 from collections import deque
-from flask import Flask, Response, render_template, jsonify, send_from_directory
+from flask import Flask, Response, render_template, jsonify, send_from_directory, request
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
 import matplotlib
@@ -221,6 +221,39 @@ class DataVisualizer:
                     payload['emotion_state'] = None
                     payload['emotion_intensity'] = None
             return jsonify(payload)
+        
+        @self.app.route('/api/special_mode', methods=['POST'])
+        def api_special_mode():
+            """
+            接收前端双击情绪球时发送的特殊模式命令
+            """
+            try:
+                data = request.get_json() if request.is_json else {}
+                command = data.get('command', 'enter_special_mode')
+                timestamp = data.get('timestamp', '')
+                
+                print(f"[INFO] Received special mode command: {command} at {timestamp}")
+                
+                # 通知 demo.py 进入特殊模式
+                if hasattr(self, 'special_mode_callback') and self.special_mode_callback:
+                    self.special_mode_callback(command)
+                    return jsonify({
+                        'success': True,
+                        'message': 'Special mode command received and processed'
+                    })
+                else:
+                    # 如果没有设置回调，将命令存储起来供 demo.py 轮询
+                    self.pending_special_mode_command = command
+                    return jsonify({
+                        'success': True,
+                        'message': 'Special mode command received (pending)'
+                    })
+            except Exception as e:
+                print(f"[ERROR] Failed to process special mode command: {e}")
+                return jsonify({
+                    'success': False,
+                    'message': str(e)
+                }), 500
         
     def start_server(self):
         """启动Flask服务器"""

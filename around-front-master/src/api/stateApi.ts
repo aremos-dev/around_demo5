@@ -196,3 +196,32 @@ export const getCachedBackendState = async (): Promise<BackendState | null> => {
   lastFetchTime = now
   return cachedState
 }
+
+/**
+ * 发送特殊模式命令到后端
+ * 双击情绪球时触发，让后端进入特殊状态
+ */
+export const sendSpecialModeCommand = async (): Promise<{ success: boolean; message: string }> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/special_mode`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        command: 'enter_special_mode',
+        timestamp: new Date().toISOString(),
+      }),
+    })
+    
+    if (!response.ok) {
+      console.warn('Failed to send special mode command')
+      return { success: false, message: 'Request failed' }
+    }
+    
+    return await response.json()
+  } catch (error) {
+    console.error('Error sending special mode command:', error)
+    return { success: false, message: 'Network error' }
+  }
+}
