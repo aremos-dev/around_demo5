@@ -2,8 +2,8 @@ services:
   my-device:
     # 1. 镜像构建上下文 (当前目录)
     build: .
-    image: around_demo:v5
-    container_name: around_demo5
+    image: around_demo:v6
+    container_name: around_demo6
     
     # 2. 开机自启 (关键！)
     restart: always
