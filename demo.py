@@ -4,8 +4,41 @@ from transitions import Machine, State
 import pygame
 import threading
 import time
+import sys
+import os
+from datetime import datetime
 from hall import hall
 from data_recorder import DataRecorder
+
+
+def setup_logging():
+    """将所有标准输出和标准错误重定向到 demo.log 文件，同时保留控制台输出，便于后续查找报错。"""
+    log_dir = os.path.dirname(os.path.abspath(__file__))
+    log_path = os.path.join(log_dir, 'demo.log')
+    log_file = open(log_path, 'a', encoding='utf-8')
+
+    log_file.write(f"\n{'='*60}\n=== 会话开始 {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ===\n{'='*60}\n")
+    log_file.flush()
+
+    class TeeOutput:
+        """将输出同时写入文件和控制台"""
+
+        def __init__(self, file_obj, stream):
+            self.file = file_obj
+            self.stream = stream
+
+        def write(self, data):
+            self.file.write(data)
+            if '\n' in data or '\r' in data:
+                self.file.flush()
+            self.stream.write(data)
+
+        def flush(self):
+            self.file.flush()
+            self.stream.flush()
+
+    sys.stdout = TeeOutput(log_file, sys.__stdout__)
+    sys.stderr = TeeOutput(log_file, sys.__stderr__)
 
 class dot():
     def __init__(self, data_source='both'):
@@ -17,7 +50,7 @@ class dot():
         self.is_levitating = False
         self.last_interaction_ts = time.time()
         self.idle_mode_running = False
-        self.hall = hall(port='/dev/ttyS7')
+        self.hall = hall(port='/dev/ttyUSB0')
         
         pygame.mixer.init()
 
@@ -32,7 +65,6 @@ class dot():
             State(name='guiding_mode3', on_enter=['_enter_guiding_mode3'], on_exit=['stop_interaction']),
             State(name='desk_idle', on_enter=['_enter_desk_idle_mode'], on_exit=['stop_interaction']),
             State(name='standby', on_enter=['_enter_standby']),
-            # 444呼吸模式：由前端双击情绪球触发
             State(name='breathing_444', on_enter=['_enter_breathing_444'], on_exit=['stop_interaction']),
         ]
    
@@ -50,7 +82,6 @@ class dot():
             {'trigger': 'guide_finished', 'source': ['guiding_fatigue', 'guiding_mode1', 'guiding_mode2', 'guiding_mode3'], 'dest': 'waiting'},
             {'trigger': 'enter_standby', 'source': ['booting', 'baseline', 'waiting', 'engaged', 'guiding_fatigue', 'guiding_mode1', 'guiding_mode2', 'guiding_mode3', 'desk_idle', 'breathing_444'], 'dest': 'standby'},
             {'trigger': 'standby_done', 'source': 'standby', 'dest': 'waiting'},
-            # 444呼吸模式：只能从 engaged 状态进入，完成后返回 engaged
             {'trigger': 'enter_breathing_444', 'source': 'engaged', 'dest': 'breathing_444'},
             {'trigger': 'breathing_444_done', 'source': 'breathing_444', 'dest': 'engaged'},
         ]
@@ -101,7 +132,8 @@ class dot():
             last_hr_ts = getattr(self.fsm.radar, '_last_hr_time', 0)
             fresh = (time.time() - last_hr_ts) < 8  # consider present if new HR within 8s
 
-            self.is_here = bool(fresh)
+            # self.is_here = bool(fresh)
+            self.is_here = True
             if self.is_here:
                 print('some one is here')
             else:
@@ -112,7 +144,7 @@ class dot():
                 if self.is_here and self.state == 'waiting':
                     self.person_detected()
                 if (not self.is_here) and self.state in ['engaged', 'guiding_fatigue', 'guiding_mode1', 'guiding_mode2', 'guiding_mode3']:
-                    self.stop_interaction()
+                    # stop_interaction 由 on_exit 自动调用
                     self.lost_person()
             time.sleep(2)
 
@@ -128,17 +160,18 @@ class dot():
             if self.le == True:
                 if self.hall.hall_value:
                     # print(f'Read hall:{self.hall.hall_value[-1]}')
-                    if self.hall.hall_value[-1]>= 1400 and self.hall.hall_value[-1] <= 1900:
-                        self.is_levitating = True
-                        self.hall.write_string('coil_flag=1')
-                        time.sleep(0.7)
-                        self.hall.write_string('platform_flag*2')
+                    if self.hall.hall_value[-1]>= 1600 and self.hall.hall_value[-1] <= 2200:
+                        if self.state != 'standby':
+                            self.is_levitating = True
+                            self.hall.write_string('coil_flag=1')
+                            time.sleep(0.7)
+                            self.hall.write_string('platform_flag*2')
                     elif self.hall.hall_value[-1] >= 350 and self.hall.hall_value[-1] <= 450:
                         self.is_levitating = False
                         self.hall.write_string('platform_flag*0')
-                    elif self.hall.hall_value[-1] >= 2500 and self.hall.hall_value[-1] <= 2600:
+                    elif self.hall.hall_value[-1] >= 2250 and self.hall.hall_value[-1] <= 2400:
                         self.is_levitating = True
-                    elif self.hall.hall_value[-1]>= 2800 and self.hall.hall_value[-1] <= 2900:
+                    elif self.hall.hall_value[-1]>= 2700 and self.hall.hall_value[-1] <= 3100:
                         if self.state != 'standby':
                             self.enter_standby()
 
@@ -152,6 +185,8 @@ class dot():
         # if self.is_levitating:
         #     self.guide_finished()
         #     return
+        self.ble.message_sync('s=0')  # 进入非省电状态
+        time.sleep(0.5)
         duration = 10
         start = time.time()
         self.ble.mode_sync(7)  # warm yellow flash
@@ -171,6 +206,8 @@ class dot():
 
     def mode2(self):
         print('mode2')
+        self.ble.message_sync('s=0')  # 进入非省电状态
+        time.sleep(0.5)
         duration = 8.0
         start = time.time()
         self.ble.mode_sync(2)  # blue-purple slow flow
@@ -202,13 +239,13 @@ class dot():
         time.sleep(0.5)
         self.ble.shake_sync(0)
         time.sleep(0.5)
-        self.ble.message_sync('s=1')
+        # s=1 由 on_exit 的 stop_interaction 处理
         
         if self.state == 'guiding_fatigue':
             self.guide_finished()
 
     def stop_interaction(self,):
-        time.sleep(0.5)
+        time.sleep(1)
         pygame.mixer.music.stop() # 停止音乐
         self.ble.mode_sync(3)#关灯
         time.sleep(0.5)
@@ -216,6 +253,7 @@ class dot():
         time.sleep(0.5)
         self.ble.jump_sync(0)#关跳动
         time.sleep(0.5)
+        self.ble.message_sync('s=1')  # 进入省电状态
 
     def music(self, sound_file, max_duration=None, loops=0):
         """播放音频文件并等待播放完成
@@ -255,12 +293,16 @@ class dot():
         threading.Thread(target=self._standby_loop, daemon=True).start()
 
     def _standby_loop(self):
-        self.stop_interaction()
+        self.stop_interaction()  # 已包含 s=1 省电状态
         self.hall.write_string('platform_flag*0')
         while self.state == 'standby':
             if not self.is_levitating:
-                self.standby_done()
+                while not self.ble.is_connected:
+                    time.sleep(0.5)
+                self.ble.message_sync('s=0')  # 退出待机时进入非省电状态
                 print('standby_done')
+                time.sleep(0.5)  # 给一个短暂的过渡时间，确保 standby 完全结束后再进入下一个状态
+                self.standby_done()
                 return
             time.sleep(0.5)
 
@@ -289,8 +331,11 @@ class dot():
         print('usr engaged')
         start = time.time()
         self._mark_interaction()
+        self.ble.color_sync(78, 58, 158)
+        time.sleep(0.5)
+        self.ble.message_sync('s=0')
         while self.state == 'engaged':
-            self.ble.color_sync(78, 58, 158)
+            
             if not self.is_levitating:
                 print('start mode monitoring')
                 time.sleep(20)
@@ -298,7 +343,9 @@ class dot():
                     self.need_fatigue()
                     return
                 self._mark_interaction()
-                self.ble.mode_sync(2)
+                if not self.is_levitating:
+                    self.ble.mode_sync(2)
+                    time.sleep(0.5)
                 while not self.is_levitating:
                     print('start inspiration monitoring')
                     if self.ble.gyroscope[-1] == 1 and self.ble.gyroscope[-2] == 1:
@@ -321,6 +368,7 @@ class dot():
                             continue  
                     else :
                         time.sleep(0.5)   
+                self.ble.color_sync(78, 58, 158)
             # if time.time() - start > 2700:
             #     print('usr works too much time')
             #     self.le = False
@@ -328,7 +376,7 @@ class dot():
             #     self.need_fatigue()
             #     return
             if not self.is_here:
-                self.stop_interaction()
+                # stop_interaction 由 on_exit 自动调用
                 self.lost_person()
                 return
             time.sleep(1)
@@ -340,6 +388,8 @@ class dot():
         if self.state != 'desk_idle':
             return
         self.idle_mode_running = True
+        self.ble.message_sync('s=0')  # 进入非省电状态
+        time.sleep(0.5)
         self.ble.color_sync(200, 220, 255)  # soft white steady
         idle_start = time.time()
         while self.state == 'desk_idle' and (time.time() - idle_start) < 300 and not self.is_levitating and self.is_here:
@@ -371,7 +421,7 @@ class dot():
                     return
                 time.sleep(1)
         # after 5 minutes of stillness, fully stop outputs
-        self.stop_interaction()
+        # stop_interaction 由 on_exit 自动调用
         self.idle_mode_running = False
         self._mark_interaction()
         if self.state == 'desk_idle':
@@ -382,6 +432,8 @@ class dot():
 
     def mode3(self):
         print('mode3: intense shake response')
+        self.ble.message_sync('s=0')  # 进入非省电状态
+        time.sleep(0.5)
         duration = 12.0
         start = time.time()
         self.ble.mode_sync(4)  # orange fast flow
@@ -421,10 +473,13 @@ class dot():
         print('[444呼吸模式] Breathing 444 mode started')
 
         time.sleep(0.5)
+        self.ble.message_sync('s=0')  # 进入非省电状态
+        time.sleep(0.5)
         # TODO: 在这里添加444呼吸模式的具体行为
         self.ble.message_sync('m=1')
-        time.sleep(16)
-        
+        self.hall.write_string('platform_flag*1')
+        time.sleep(60)
+        self.hall.write_string('platform_flag*2')
         # 444呼吸模式完成后，返回 engaged 状态
         if self.state == 'breathing_444':
             print('[444呼吸模式] Breathing 444 mode finished, returning to engaged')
@@ -472,5 +527,6 @@ def main():
     Fatigue.main()
 
 if __name__ == "__main__":
+    setup_logging()  # 将 stdout/stderr 同时写入 demo.log，便于后续查找报错
     # os.system('sudo systemctl restart bluetooth')
     main()

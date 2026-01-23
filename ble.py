@@ -278,11 +278,9 @@ class BLE():
         while self.is_running:
             await asyncio.sleep(1.0)
             
-            # 打印当前数据
-            # self.print_data()
-            
             if not self.client.is_connected:
                 print("设备已断开连接。")
+                self.is_connected = False
                 break
     
     async def stop_reading(self):
