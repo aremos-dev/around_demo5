@@ -35,33 +35,43 @@ class heal_mode():
             time.sleep(0.1)
 
     def planA(self,):
-        self.ble.message_sync('m=1')
-        self.music('fengsheng.MP3', max_duration=80,loops=100)
-        
-        self._music_thread = threading.Thread(
-            target=self.music, args=('fengsheng.MP3',), kwargs={'max_duration': 225, 'loops': 100}, daemon=True
-        )
-        self._music_thread.start()
-        for i in range(5):
-            self.ble.message_sync('v=1')
-            time.sleep(45)
+        self.ble.message_sync('c=64,25,3')
+        time.sleep(0.5)
         self.ble.message_sync('v=1')
-        time.sleep(80)
-        self.music('songbo.MP3',loops=1)
-        self.ble.message_sync('m=0')
+        time.sleep(1)
+        self.ble.message_sync('v=0')
+        time.sleep(34)
+        self.ble.message_sync('c=255,110,10')
+        time.sleep(0.5)
+        self.ble.message_sync('v=1')
+        time.sleep(2)
+        self.ble.message_sync('v=0')
+        time.sleep(58)
+        self.ble.message_sync('c=255,110,10')
+        time.sleep(0.5)
+        self.ble.message_sync('v=1')
+        time.sleep(1)
+        self.ble.message_sync('v=0')
+        time.sleep(58)
+        self.ble.message_sync('v=1')
+        time.sleep(1)
+        self.ble.message_sync('v=0')
+        time.sleep(54)
+        self.ble.message_sync('c=64,25,3')
+        time.sleep(0.5)
+        self.ble.message_sync('v=1')
+        time.sleep(1)
+        self.ble.message_sync('v=0')
+        time.sleep(0.5)
+        self.ble.message_sync('v=1')
+        time.sleep(1)
+        self.ble.message_sync('v=0')
+        time.sleep(28)
+        self.ble.message_sync('c=0')
 
     def planB(self,):
-        self._music_thread = threading.Thread(
-            target=self.music, args=('hailang.MP3',), kwargs={'max_duration': 96}, daemon=True
-        )
-        self._music_thread.start()
-        for i in range(8):
-            self.ble.message_sync('m=0')
-            time.sleep(4)
-            self.ble.message_sync('v=2')
-
-    def planC(self):
-        """方案 C，暂未实现"""
+        # TODO: 在这里实现方案B的逻辑
+        print("方案B待实现")
         pass
 
     def main(self):
@@ -76,26 +86,19 @@ class heal_mode():
 
         self.ble.message_sync('s=0')
 
-        try:
-            while True:
-                print("\n输入 a: 执行 planA | b: 执行 planB | c: 执行 planC | q: 退出")
-                choice = input("请选择: ").strip().lower()
-                if choice == 'q':
-                    break
-                if choice == 'a':
-                    self.planA()
-                elif choice == 'b':
-                    self.planB()
-                elif choice == 'c':
-                    self.planC()
-                else:
-                    print("请输入 a、b、c 或 q")
-        finally:
-            self.ble.stop_reading_sync()
-            self.ble.message_sync('m=0')
-            self.ble.message_sync('s=1')
-            print("BLE 已断开，程序退出")
-
+        # 让用户选择方案
+        while True:
+            choice = input("请选择方案 (输入 A 或 B): ").strip().upper()
+            if choice == 'A':
+                print("执行方案A...")
+                self.planA()
+                break
+            elif choice == 'B':
+                print("执行方案B...")
+                self.planB()
+                break
+            else:
+                print("无效输入，请输入 A 或 B")
 
 if __name__ == '__main__':
     heal_mode().main()
