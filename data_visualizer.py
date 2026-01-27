@@ -4,6 +4,7 @@ import threading
 import os
 from collections import deque
 from flask import Flask, Response, render_template, jsonify, send_from_directory, request
+from flask_socketio import SocketIO, emit
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
 import matplotlib
@@ -82,11 +83,17 @@ class DataVisualizer:
                             template_folder=OLD_FRONTEND_DIR,
                             static_folder=OLD_FRONTEND_DIR)
             self.use_new_frontend = False
+        
+        # 创建 SocketIO 实例（支持 WebSocket）
+        self.socketio = SocketIO(self.app, cors_allowed_origins="*", async_mode='threading')
         self._setup_routes()
+        self._setup_socketio()
         
         # Flask应用线程
         self.server_thread = None
         self.running = False
+        # WebSocket 推送线程
+        self.ws_push_thread = None
     
     def update_data(self, data_dict):
         """
@@ -254,17 +261,66 @@ class DataVisualizer:
                     'success': False,
                     'message': str(e)
                 }), 500
+    
+    def _setup_socketio(self):
+        """Setup WebSocket event handlers"""
+        
+        @self.socketio.on('connect')
+        def handle_connect():
+            print("[INFO] WebSocket client connected")
+            emit('connected', {'status': 'connected'})
+        
+        @self.socketio.on('disconnect')
+        def handle_disconnect():
+            print("[INFO] WebSocket client disconnected")
+    
+    def _ws_push_breathing_rate(self):
+        """后台线程：每秒推送呼吸频率数据"""
+        while self.running:
+            try:
+                with self.data_lock:
+                    # 获取最新的呼吸频率值
+                    if len(self.data_history['br']) > 0:
+                        latest_br = self.data_history['br'][-1]
+                        latest_time = self.data_history['time'][-1] if len(self.data_history['time']) > 0 else 0
+                        
+                        # 通过 WebSocket 推送数据
+                        self.socketio.emit('breathing_rate_update', {
+                            'br': latest_br,
+                            'time': latest_time,
+                            'timestamp': time.time()
+                        })
+                time.sleep(1.0)  # 每秒推送一次
+            except Exception as e:
+                print(f"[ERROR] WebSocket push error: {e}")
+                time.sleep(1.0)
         
     def start_server(self):
-        """启动Flask服务器"""
+        """启动Flask服务器和WebSocket推送线程"""
         if not self.running:
             self.running = True
+            
+            # 启动 WebSocket 推送线程（每秒推送呼吸频率）
+            self.ws_push_thread = threading.Thread(
+                target=self._ws_push_breathing_rate,
+                daemon=True
+            )
+            self.ws_push_thread.start()
+            print("[INFO] WebSocket breathing rate push thread started")
+            
+            # 启动 Flask + SocketIO 服务器
             self.server_thread = threading.Thread(
-                target=lambda: self.app.run(host='0.0.0.0', port=self.port, debug=False),
+                target=lambda: self.socketio.run(
+                    self.app, 
+                    host='0.0.0.0', 
+                    port=self.port, 
+                    debug=False,
+                    allow_unsafe_werkzeug=True
+                ),
                 daemon=True
             )
             self.server_thread.start()
-            print(f"[INFO] Data visualizer server started, access at: http://localhost:{self.port}")
+            print(f"[INFO] Data visualizer server started with WebSocket support, access at: http://localhost:{self.port}")
 
     def set_lf_hf_assessment(self, ratio, status=None):
         """External interface: set LF/HF ratio and assessment status.

@@ -157,7 +157,7 @@ class PPG:
         # 假设一旦开始读取，连接就建立了
         # 在实际应用中，可能需要等待ble.is_connected变为True
         while not self.ble.is_connected:
-            print("Waiting for BLE device to connect...")
+            # print("Waiting for BLE device to connect...")
             time.sleep(2)
         return True
 

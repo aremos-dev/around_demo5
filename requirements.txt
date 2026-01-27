@@ -17,6 +17,7 @@ dbus-next==0.2.3
 dbus-python==1.4.0
 easydev==0.13.3
 Flask==3.0.3
+flask-socketio==5.3.6
 fonttools==4.57.0
 future==1.0.0
 # h5py @ file:///croot/h5py_1715094734337/work
