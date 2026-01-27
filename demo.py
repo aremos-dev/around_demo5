@@ -161,7 +161,7 @@ class dot():
                 if self.hall.hall_value:
                     # print(f'Read hall:{self.hall.hall_value[-1]}')
                     if self.hall.hall_value[-1]>= 1600 and self.hall.hall_value[-1] <= 2200:
-                        if self.state != 'standby':
+                        if self.state != 'standby' and self.state != 'breathing_444':
                             self.is_levitating = True
                             self.hall.write_string('coil_flag=1')
                             time.sleep(0.7)

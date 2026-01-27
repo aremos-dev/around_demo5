@@ -26,7 +26,7 @@ class hall():
         payload = data + "\n"
         written = self.ser.write(payload.encode("utf-8"))
         self.ser.flush()
-        # print(f"Wrote {written} bytes to {self.port}: {repr(payload)}")
+        print(f"Wrote {written} bytes to {self.port}: {repr(payload)}")
 
 
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { RespirationRateChart } from './RespirationRateChart'
 import { WaveChart } from './WaveChart'
 import { GaugeChart } from './GaugeChart'
@@ -16,6 +16,7 @@ import {
 } from '../data/mockData'
 import { toResponsiveWidth, toResponsiveHeight } from '../hooks/useContainerSize'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip'
+import { socketService } from '../api/socketService'
 
 interface EmotionModalProps {
   isOpen: boolean
@@ -32,7 +33,9 @@ export const EmotionModal = ({ isOpen, onClose, topBarHeight, sphereWidth, conta
   const [stressRecovery, setStressRecovery] = useState<StressRecoveryData | null>(null)
   const [autonomicBalance, setAutonomicBalance] = useState<AutonomicBalanceData | null>(null)
   const [autonomicActivity, setAutonomicActivity] = useState<AutonomicActivityData | null>(null)
+  const dataCountRef = useRef(0)
 
+  // 初始加载数据
   useEffect(() => {
     if (isOpen) {
       // 打开弹窗时加载所有数据
@@ -44,11 +47,46 @@ export const EmotionModal = ({ isOpen, onClose, topBarHeight, sphereWidth, conta
         fetchAutonomicActivity()
       ]).then(([respiration, stressLevelData, stressRecoveryData, autonomicBalanceData, autonomicActivityData]) => {
         setRespirationData(respiration)
+        dataCountRef.current = respiration.length
         setStressLevel(stressLevelData)
         setStressRecovery(stressRecoveryData)
         setAutonomicBalance(autonomicBalanceData)
         setAutonomicActivity(autonomicActivityData)
       })
+    }
+  }, [isOpen])
+
+  // WebSocket 实时更新呼吸频率
+  useEffect(() => {
+    if (!isOpen) return
+
+    // 连接 WebSocket
+    socketService.connect()
+
+    // 订阅呼吸频率更新
+    const unsubscribe = socketService.onBreathingRateUpdate((data: { br: number; time: number; timestamp: number }) => {
+      setRespirationData((prev) => {
+        const newData: RespirationData = {
+          hour: 0,
+          minute: 0,
+          value: data.br,
+          time: dataCountRef.current.toString().padStart(2, '0'),
+          timestamp: data.timestamp * 1000,
+        }
+        dataCountRef.current += 1
+
+        const updated = [...prev, newData]
+        // 保持最大 50 个数据点
+        if (updated.length > 50) {
+          return updated.slice(-50)
+        }
+        return updated
+      })
+    })
+
+    // 清理
+    return () => {
+      unsubscribe()
     }
   }, [isOpen])
 
